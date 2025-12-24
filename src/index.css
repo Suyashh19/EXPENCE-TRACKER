@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme {
+  /* Surface color: almost invisible to let background through */
+  --color-glass-surface: rgba(255, 255, 255, 0.05); 
+  /* Edge color: pure white and high opacity to look "thin and sharp" */
+  --color-glass-edge: rgba(255, 255, 255, 0.9);
+}
+
+:root {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  /* Prevent background from scrolling, let Dashboard handle it */
+  overflow: hidden; 
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* --- THE GLASS WORLD BACKGROUND --- */
+.glass-world {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(circle at 50% 50%, #fdfeff 0%, #f1f5f9 100%);
+}
+
+.shine-blob {
+  position: absolute;
+  filter: blur(160px); /* Increased for "more blur" effect */
+  border-radius: 50%;
+  opacity: 0.6;
+  animation: float-blob 20s infinite alternate ease-in-out;
+}
+
+/* Animations to make the light "dance" behind your glass */
+@keyframes float-blob {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(40px, 60px) scale(1.1); }
+}
+
+.blob-indigo { top: -10%; left: 5%; width: 700px; height: 700px; background: #c7d2fe; }
+.blob-rose { bottom: -10%; right: 0%; width: 800px; height: 800px; background: #ffe4e6; animation-delay: -5s; }
+.blob-sky { top: 30%; right: -5%; width: 500px; height: 500px; background: #e0f2fe; animation-delay: -10s; }
+
+/* --- REUSABLE UTILITY FOR THIN GLASS --- */
+@utility thin-glass {
+  background-color: var(--color-glass-surface);
+  backdrop-filter: blur(120px);
+  -webkit-backdrop-filter: blur(120px);
+  border: 1px solid var(--color-glass-edge);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.05);
+}
+
+/* Custom Scrollbar for the main content area */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
