@@ -1,12 +1,54 @@
+import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import Charts from "../components/Charts";
+import {
+  getDashboardStats,
+  getRecentExpenses,
+} from "../services/expenseService";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../services/firebase";
 
 export default function Dashboard() {
-  const stats = [
-    { label: "Today's Sale", val: "$12,426", trend: "+36%", up: true },
-    { label: "Total Sales", val: "$2,38,485", trend: "-14%", up: false },
-    { label: "Total Orders", val: "84,382", trend: "+36%", up: true }
-  ];
+  const [stats, setStats] = useState([]);
+  const [recent, setRecent] = useState([]);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) return;
+
+      // 🔹 Fetch totals
+      const data = await getDashboardStats();
+
+      if (data) {
+        setStats([
+          {
+            label: "Today's Expense",
+            val: `$${data.todayTotal}`,
+            trend: "",
+            up: true,
+          },
+          {
+            label: "Total Expense",
+            val: `$${data.totalAmount}`,
+            trend: "",
+            up: true,
+          },
+          {
+            label: "Total Orders",
+            val: data.totalOrders,
+            trend: "",
+            up: true,
+          },
+        ]);
+      }
+
+      // 🔹 Fetch recent activity
+      const recentData = await getRecentExpenses();
+      setRecent(recentData);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   return (
     <div className="flex flex-col gap-8">
@@ -27,16 +69,7 @@ export default function Dashboard() {
               {stat.val}
             </h3>
 
-            <div
-              className={`mt-4 text-sm font-black ${
-                stat.up ? "text-emerald-500" : "text-rose-500"
-              }`}
-            >
-              {stat.trend}
-              <span className="text-slate-300 font-medium ml-1">
-                vs last month
-              </span>
-            </div>
+            <div className="mt-4 text-sm font-black text-emerald-500"></div>
 
             <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10 blur-2xl group-hover:bg-white/20 transition-all"></div>
           </div>
@@ -44,27 +77,12 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-3 gap-8 mb-10">
-        {/* CHART AREA */}
+        {/* SALES ANALYSIS (UNCHANGED) */}
         <div className="col-span-2 rounded-[4rem] thin-glass p-12 shadow-2xl">
           <div className="flex justify-between items-center mb-10">
             <h3 className="text-2xl font-black tracking-tight text-slate-900">
               Sales Analysis
             </h3>
-
-            <div className="flex gap-2 rounded-2xl bg-white/20 p-1.5 border border-white/60 shadow-inner">
-              {["12 Months", "6 Months", "30 Days"].map((t, i) => (
-                <button
-                  key={t}
-                  className={`px-6 py-2 rounded-xl text-xs font-bold transition-all ${
-                    i === 0
-                      ? "bg-white text-blue-600 shadow-md"
-                      : "text-slate-400"
-                  }`}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
           </div>
 
           <div className="h-64">
@@ -79,9 +97,9 @@ export default function Dashboard() {
           </h3>
 
           <div className="space-y-6">
-            {[1, 2, 3, 4].map((item) => (
+            {recent.map((item) => (
               <div
-                key={item}
+                key={item.id}
                 className="flex items-center gap-4 border-b border-white/20 pb-4 last:border-0"
               >
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-slate-100 to-white border border-white/80 shadow-sm flex items-center justify-center font-bold text-blue-600">
@@ -90,14 +108,16 @@ export default function Dashboard() {
 
                 <div className="flex-1">
                   <p className="text-sm font-black text-slate-800">
-                    New Purchase
+                    {item.title}
                   </p>
                   <p className="text-[10px] font-bold text-slate-400 tracking-wider">
-                    2 MINS AGO
+                    {item.category}
                   </p>
                 </div>
 
-                <p className="text-sm font-black text-emerald-500">+$240</p>
+                <p className="text-sm font-black text-emerald-500">
+                  +${item.amount}
+                </p>
               </div>
             ))}
           </div>

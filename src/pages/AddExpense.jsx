@@ -1,5 +1,7 @@
 import { useState } from "react";
 import Navbar from "../components/Navbar";
+import { addExpense } from "../services/expenseService";
+
 
 export default function AddExpense() {
   const [formData, setFormData] = useState({
@@ -26,10 +28,32 @@ export default function AddExpense() {
     }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Form submitted:", formData);
-  };
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  try {
+    await addExpense({
+      title: formData.title,
+      amount: Number(formData.amount),
+      category: formData.category,
+      date: formData.date,
+    });
+
+    alert("Expense saved successfully");
+
+    // reset form after save
+    setFormData({
+      title: "",
+      amount: "",
+      category: "Food",
+      date: new Date().toISOString().split("T")[0],
+    });
+  } catch (error) {
+    console.error(error);
+    alert("Failed to save expense");
+  }
+};
+
 
   return (
     <div className="flex flex-col gap-8">
