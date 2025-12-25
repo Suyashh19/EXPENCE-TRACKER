@@ -5,6 +5,7 @@ import { addExpense } from "../services/expenseService";
 import { ToastContainer,toast } from "react-toastify";
 
 
+
 export default function AddExpense() {
   const [formData, setFormData] = useState({
     title: "",
@@ -21,6 +22,13 @@ export default function AddExpense() {
     try {
       setAiLoading(true);
 
+  
+  const handleAIParse = async () => {
+    if (!aiInput.trim()) return;
+    
+    try {
+      setAiLoading(true);
+      
       const parsed = await parseExpenseMessage(aiInput);
       setFormData((prev) => ({
         ...prev,
@@ -33,12 +41,14 @@ export default function AddExpense() {
       toast.error(err.message || "Some error occurred", {
         className: "glass-error-toast",
       });
+      alert("Could not parse expense");
       console.error(error);
     } finally {
       setAiLoading(false);
     }
   };
 
+  
   const categories = [
     "Food",
     "Transport",
@@ -70,6 +80,7 @@ export default function AddExpense() {
       toast.success("Expense saved successfully",{
         className: "glass-success-toast",
       });
+      alert("Expense saved successfully");
 
       // reset form after save
       setFormData({
@@ -83,6 +94,7 @@ export default function AddExpense() {
       toast.error("Failed to save expense",{
         className: "glass-error-toast",
       });
+      alert("Failed to save expense");
     }
   };
 

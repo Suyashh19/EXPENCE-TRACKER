@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+// Initialize Gemini
 const genAI = new GoogleGenerativeAI(
   import.meta.env.VITE_GEMINI_API_KEY
 );
@@ -8,12 +9,16 @@ const model = genAI.getGenerativeModel({
   model: "gemini-2.5-flash",
 });
 
+// Utility (optional)
 const convertDateToISO = (dateStr) => {
   const [dd, mm, yyyy] = dateStr.split("-");
   return `${yyyy}-${mm}-${dd}`;
 };
 
 
+// --------------------
+// Base text generator
+// --------------------
 export const generateText = async (prompt) => {
   try {
     const result = await model.generateContent(prompt);
@@ -25,6 +30,9 @@ export const generateText = async (prompt) => {
 };
 
 
+// --------------------
+// 1️⃣ Parse Expense Message
+// --------------------
 export const parseExpenseMessage = async (userMessage) => {
   const prompt = `
 You are an API that converts natural language expense messages into JSON.
@@ -49,6 +57,21 @@ Rules:
 Schema:
 {
   "title": string,
+No explanation. No markdown.
+
+Choose the "category" ONLY from:
+Food, Transport, Shopping, Bills, Entertainment, Others
+
+
+Rules:
+- If category is unclear, use "Others"
+- Amount must be a number
+- Date must be in YYYY-MM-DD format
+- Date must be real time as per indian standard time 
+
+Schema:
+{
+  "title":string,
   "amount": number,
   "category": "Food | Transport | Shopping | Bills | Entertainment | Others",
   "date": "YYYY-MM-DD"
@@ -98,6 +121,28 @@ export const expenseAdvisor = async (prompt) => {
 };
 
 
+// --------------------
+// 2️⃣ AI Expense Advisor
+// --------------------
+export const expenseAdvisor = async (expenseSummary) => {
+  const prompt = `
+You are a personal finance advisor.
+
+Expense summary:
+${JSON.stringify(expenseSummary, null, 2)}
+
+Provide:
+- Spending pattern analysis
+- 3 actionable tips
+- One warning if overspending
+`;
+
+  return generateText(prompt);
+};
+
+// --------------------
+// 3️⃣ Dashboard Analytics (JSON for charts)
+// --------------------
 export const generateExpenseDashboardJSON = async (expenseAnalytics) => {
   const prompt = `
 You are an API that prepares expense analytics for a finance dashboard.
