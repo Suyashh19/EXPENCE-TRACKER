@@ -1,6 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Initialize Gemini
 const genAI = new GoogleGenerativeAI(
   import.meta.env.VITE_GEMINI_API_KEY
 );
@@ -9,9 +8,12 @@ const model = genAI.getGenerativeModel({
   model: "gemini-2.5-flash",
 });
 
-// --------------------
-// Base text generator
-// --------------------
+const convertDateToISO = (dateStr) => {
+  const [dd, mm, yyyy] = dateStr.split("-");
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+
 export const generateText = async (prompt) => {
   try {
     const result = await model.generateContent(prompt);
@@ -22,9 +24,7 @@ export const generateText = async (prompt) => {
   }
 };
 
-// --------------------
-// 1️⃣ Parse Expense Message
-// --------------------
+
 export const parseExpenseMessage = async (userMessage) => {
   const currentDate = new Date().toLocaleDateString("en-CA", {
     timeZone: "Asia/Kolkata",
@@ -77,9 +77,7 @@ Message:
   }
 };
 
-// --------------------
-// 2️⃣ AI Expense Advisor
-// --------------------
+
 export const expenseAdvisor = async (expenseSummary) => {
   const prompt = `
 You are a personal finance advisor.
@@ -96,9 +94,6 @@ Provide:
   return generateText(prompt);
 };
 
-// --------------------
-// 3️⃣ Dashboard Analytics (JSON)
-// --------------------
 export const generateExpenseDashboardJSON = async (expenseAnalytics) => {
   const prompt = `
 You are an API that prepares expense analytics for a finance dashboard.
