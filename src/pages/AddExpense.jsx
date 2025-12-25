@@ -1,6 +1,8 @@
+import { parseExpenseMessage } from "../services/geminiService";
 import { useState } from "react";
 import Navbar from "../components/Navbar";
 import { addExpense } from "../services/expenseService";
+
 
 
 export default function AddExpense() {
@@ -10,14 +12,38 @@ export default function AddExpense() {
     category: "Food",
     date: new Date().toISOString().split("T")[0],
   });
-
+  const [aiInput, setAiInput] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  
+  const handleAIParse = async () => {
+    if (!aiInput.trim()) return;
+    
+    try {
+      setAiLoading(true);
+      
+      const parsed = await parseExpenseMessage(aiInput);
+      setFormData((prev) => ({
+        ...prev,
+        title: parsed.title || "NA",
+        amount: parsed.amount || "",
+        category: parsed.category || "Food",
+        date: parsed.date || prev.date,
+      }));
+    } catch (error) {
+      alert("Could not parse expense");
+      console.error(error);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+  
   const categories = [
     "Food",
     "Transport",
     "Shopping",
     "Bills",
     "Entertainment",
-    "Other",
+    "Others",
   ];
 
   const handleChange = (e) => {
@@ -29,30 +55,30 @@ export default function AddExpense() {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  try {
-    await addExpense({
-      title: formData.title,
-      amount: Number(formData.amount),
-      category: formData.category,
-      date: formData.date,
-    });
+    try {
+      await addExpense({
+        title: formData.title,
+        amount: Number(formData.amount),
+        category: formData.category,
+        date: formData.date,
+      });
 
-    alert("Expense saved successfully");
+      alert("Expense saved successfully");
 
-    // reset form after save
-    setFormData({
-      title: "",
-      amount: "",
-      category: "Food",
-      date: new Date().toISOString().split("T")[0],
-    });
-  } catch (error) {
-    console.error(error);
-    alert("Failed to save expense");
-  }
-};
+      // reset form after save
+      setFormData({
+        title: "",
+        amount: "",
+        category: "Food",
+        date: new Date().toISOString().split("T")[0],
+      });
+    } catch (error) {
+      console.error(error);
+      alert("Failed to save expense");
+    }
+  };
 
 
   return (
@@ -71,6 +97,28 @@ export default function AddExpense() {
             <p className="text-slate-400 font-bold mt-2">
               Track your spending with precision
             </p>
+          </div>
+          {/* AI Expense Input */}
+          <div className="mb-10 space-y-4">
+            <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-4">
+              Add Expense using AI
+            </label>
+
+            <textarea
+              value={aiInput}
+              onChange={(e) => setAiInput(e.target.value)}
+              placeholder="e.g. Paid 350 for food yesterday"
+              className="w-full rounded-2xl border border-white/80 bg-white/20 px-6 py-4 text-slate-900 outline-none"
+            />
+
+            <button
+              type="button"
+              onClick={handleAIParse}
+              disabled={aiLoading}
+              className="rounded-xl bg-purple-600 px-6 py-3 text-white font-black hover:scale-105 transition"
+            >
+              {aiLoading ? "Parsing..." : "Parse with AI"}
+            </button>
           </div>
 
           <form className="space-y-8" onSubmit={handleSubmit}>
