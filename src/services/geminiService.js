@@ -9,13 +9,6 @@ const model = genAI.getGenerativeModel({
   model: "gemini-2.5-flash",
 });
 
-// Utility (optional)
-const convertDateToISO = (dateStr) => {
-  const [dd, mm, yyyy] = dateStr.split("-");
-  return `${yyyy}-${mm}-${dd}`;
-};
-
-
 // --------------------
 // Base text generator
 // --------------------
@@ -29,20 +22,21 @@ export const generateText = async (prompt) => {
   }
 };
 
-
 // --------------------
 // 1️⃣ Parse Expense Message
 // --------------------
 export const parseExpenseMessage = async (userMessage) => {
+  const currentDate = new Date().toLocaleDateString("en-CA", {
+    timeZone: "Asia/Kolkata",
+  });
+
   const prompt = `
 You are an API that converts natural language expense messages into JSON.
 
 Return ONLY valid JSON.
 No explanation. No markdown. No extra text.
 
-CURRENT DATE (IST): ${new Date().toLocaleDateString("en-CA", {
-  timeZone: "Asia/Kolkata"
-})}
+CURRENT DATE (IST): ${currentDate}
 
 Rules:
 - Choose "category" ONLY from:
@@ -57,21 +51,6 @@ Rules:
 Schema:
 {
   "title": string,
-No explanation. No markdown.
-
-Choose the "category" ONLY from:
-Food, Transport, Shopping, Bills, Entertainment, Others
-
-
-Rules:
-- If category is unclear, use "Others"
-- Amount must be a number
-- Date must be in YYYY-MM-DD format
-- Date must be real time as per indian standard time 
-
-Schema:
-{
-  "title":string,
   "amount": number,
   "category": "Food | Transport | Shopping | Bills | Entertainment | Others",
   "date": "YYYY-MM-DD"
@@ -81,12 +60,10 @@ Message:
 "${userMessage}"
 `;
 
-
   const response = await generateText(prompt);
 
   console.log("Gemini raw response:", response);
 
-  // Clean markdown if Gemini adds it
   const cleaned = response
     .replace(/```json/g, "")
     .replace(/```/g, "")
@@ -95,31 +72,10 @@ Message:
   try {
     return JSON.parse(cleaned);
   } catch (error) {
-    console.error("JSON Parse Error:", cleaned);
+    console.error("JSON Parse Error:", error,cleaned);
     throw new Error("Could not parse expense");
   }
 };
-
-
-// export const expenseAdvisor = async (expenseSummary) => {
-//   const prompt = `
-// You are a personal finance advisor.
-
-// Expense summary:
-// ${JSON.stringify(expenseSummary, null, 2)}
-
-// Provide:
-// - Spending pattern analysis
-// - 3 actionable tips
-// - One warning if overspending
-// `;
-
-//   return generateText(prompt);
-// };
-export const expenseAdvisor = async (prompt) => {
-  return generateText(prompt);
-};
-
 
 // --------------------
 // 2️⃣ AI Expense Advisor
@@ -141,7 +97,7 @@ Provide:
 };
 
 // --------------------
-// 3️⃣ Dashboard Analytics (JSON for charts)
+// 3️⃣ Dashboard Analytics (JSON)
 // --------------------
 export const generateExpenseDashboardJSON = async (expenseAnalytics) => {
   const prompt = `
@@ -199,7 +155,7 @@ ${JSON.stringify(expenseAnalytics, null, 2)}
   try {
     return JSON.parse(cleaned);
   } catch (error) {
-    console.error("Invalid Dashboard JSON:", cleaned);
+    console.error("Invalid Dashboard JSON:",error, cleaned);
     throw new Error("Invalid dashboard JSON returned by Gemini");
   }
 };
