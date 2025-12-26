@@ -1,6 +1,8 @@
+import { parseExpenseMessage } from "../services/geminiService";
 import { useState } from "react";
 import Navbar from "../components/Navbar";
 import { addExpense } from "../services/expenseService";
+import { ToastContainer,toast } from "react-toastify";
 
 
 export default function AddExpense() {
@@ -10,6 +12,32 @@ export default function AddExpense() {
     category: "Food",
     date: new Date().toISOString().split("T")[0],
   });
+  const [aiInput, setAiInput] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const handleAIParse = async () => {
+    if (!aiInput.trim()) return;
+
+    try {
+      setAiLoading(true);
+
+      const parsed = await parseExpenseMessage(aiInput);
+      setFormData((prev) => ({
+        ...prev,
+        title: parsed.title || "NA",
+        amount: parsed.amount || "",
+        category: parsed.category || "Food",
+        date: parsed.date || prev.date,
+      }));
+    } catch (error) {
+      toast.error(err.message || "Some error occurred", {
+        className: "glass-error-toast",
+      });
+      console.error(error);
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   const categories = [
     "Food",
@@ -17,7 +45,7 @@ export default function AddExpense() {
     "Shopping",
     "Bills",
     "Entertainment",
-    "Other",
+    "Others",
   ];
 
   const handleChange = (e) => {
@@ -29,30 +57,34 @@ export default function AddExpense() {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  try {
-    await addExpense({
-      title: formData.title,
-      amount: Number(formData.amount),
-      category: formData.category,
-      date: formData.date,
-    });
+    try {
+      await addExpense({
+        title: formData.title,
+        amount: Number(formData.amount),
+        category: formData.category,
+        date: formData.date,
+      });
 
-    alert("Expense saved successfully");
+      toast.success("Expense saved successfully",{
+        className: "glass-success-toast",
+      });
 
-    // reset form after save
-    setFormData({
-      title: "",
-      amount: "",
-      category: "Food",
-      date: new Date().toISOString().split("T")[0],
-    });
-  } catch (error) {
-    console.error(error);
-    alert("Failed to save expense");
-  }
-};
+      // reset form after save
+      setFormData({
+        title: "",
+        amount: "",
+        category: "Food",
+        date: new Date().toISOString().split("T")[0],
+      });
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to save expense",{
+        className: "glass-error-toast",
+      });
+    }
+  };
 
 
   return (
@@ -71,6 +103,28 @@ export default function AddExpense() {
             <p className="text-slate-400 font-bold mt-2">
               Track your spending with precision
             </p>
+          </div>
+          {/* AI Expense Input */}
+          <div className="mb-10 space-y-4">
+            <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-4">
+              Add Expense using AI
+            </label>
+
+            <textarea
+              value={aiInput}
+              onChange={(e) => setAiInput(e.target.value)}
+              placeholder="e.g. Paid 350 for food yesterday"
+              className="w-full rounded-2xl border border-white/80 bg-white/20 px-6 py-4 text-slate-900 outline-none"
+            />
+
+            <button
+              type="button"
+              onClick={handleAIParse}
+              disabled={aiLoading}
+              className="rounded-xl bg-purple-600 px-6 py-3 text-white font-black hover:scale-105 transition"
+            >
+              {aiLoading ? "Parsing..." : "Parse with AI"}
+            </button>
           </div>
 
           <form className="space-y-8" onSubmit={handleSubmit}>
@@ -152,6 +206,7 @@ export default function AddExpense() {
           <div className="absolute -left-10 -bottom-10 h-32 w-32 rounded-full bg-blue-400/10 blur-3xl"></div>
         </div>
       </div>
+      <ToastContainer />
     </div>
   );
 }

@@ -9,6 +9,7 @@ const Sidebar = () => {
     { name: "Add Expense", path: "/add" },
     { name: "Expenses", path: "/expenses" },
     { name: "Analytics", path: "/analytics" },
+    { name: "AI Advisory", path: "/advice" },
   ];
 
   return (

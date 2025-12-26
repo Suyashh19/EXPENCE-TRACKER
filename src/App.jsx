@@ -8,6 +8,8 @@ import Analytics from "./pages/Analytics";
 import Sidebar from "./components/Sidebar";
 import Landing from "./pages/Landing";
 import PublicLayout from "./layouts/PublicLayout";
+import Advice from "./pages/Advice";
+import { getUserExpenses } from "./services/expenseService";
 
 // Glass layout for authenticated pages
 const GlassLayout = ({ children }) => {
@@ -82,6 +84,10 @@ export default function App() {
           element={<GlassLayout><Analytics /></GlassLayout>}
         />
 
+        <Route
+          path="/advice"
+          element={<GlassLayout><Advice promiseExpenseSummary={getUserExpenses()} /></GlassLayout>}
+        />
       </Routes>
     </BrowserRouter>
   );
