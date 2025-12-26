@@ -9,8 +9,12 @@ const Sidebar = () => {
     { name: "Add Expense", path: "/add" },
     { name: "Expenses", path: "/expenses" },
     { name: "Analytics", path: "/analytics" },
+<<<<<<< HEAD
     { name: "Advice", path: "/advice" },
     { name: "Settings", path: "/settings" },
+=======
+    { name: "AI Advisory", path: "/advice" },
+>>>>>>> 52c9948 (Advisory System and Implement toast for alerts)
   ];
 
   return (

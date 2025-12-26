@@ -10,9 +10,12 @@ import Landing from "./pages/Landing";
 import PublicLayout from "./layouts/PublicLayout";
 import Advice from "./pages/Advice";
 import { getUserExpenses } from "./services/expenseService";
+<<<<<<< HEAD
 import Settings from "./pages/settings/Settings";
 import Preferences from "./pages/settings/Preferences";
 
+=======
+>>>>>>> 52c9948 (Advisory System and Implement toast for alerts)
 
 // Glass layout for authenticated pages
 const GlassLayout = ({ children }) => {
@@ -91,10 +94,13 @@ export default function App() {
           path="/advice"
           element={<GlassLayout><Advice promiseExpenseSummary={getUserExpenses()} /></GlassLayout>}
         />
+<<<<<<< HEAD
         <Route
           path="/settings"
           element={<GlassLayout><Settings /></GlassLayout>}
         />
+=======
+>>>>>>> 52c9948 (Advisory System and Implement toast for alerts)
       </Routes>
     </BrowserRouter>
   );

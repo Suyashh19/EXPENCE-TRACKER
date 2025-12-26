@@ -16,7 +16,10 @@
     "lucide-react": "^0.562.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+<<<<<<< HEAD
     "react-google-charts": "^5.2.1",
+=======
+>>>>>>> 52c9948 (Advisory System and Implement toast for alerts)
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.11.0",
     "react-toastify": "^11.0.5",

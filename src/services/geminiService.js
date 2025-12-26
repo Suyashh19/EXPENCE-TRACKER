@@ -78,19 +78,22 @@ Message:
 };
 
 
-export const expenseAdvisor = async (expenseSummary) => {
-  const prompt = `
-You are a personal finance advisor.
+// export const expenseAdvisor = async (expenseSummary) => {
+//   const prompt = `
+// You are a personal finance advisor.
 
-Expense summary:
-${JSON.stringify(expenseSummary, null, 2)}
+// Expense summary:
+// ${JSON.stringify(expenseSummary, null, 2)}
 
-Provide:
-- Spending pattern analysis
-- 3 actionable tips
-- One warning if overspending
-`;
+// Provide:
+// - Spending pattern analysis
+// - 3 actionable tips
+// - One warning if overspending
+// `;
 
+//   return generateText(prompt);
+// };
+export const expenseAdvisor = async (prompt) => {
   return generateText(prompt);
 };
 

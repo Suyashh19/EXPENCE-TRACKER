@@ -3,7 +3,10 @@ import { useState } from "react";
 import Navbar from "../components/Navbar";
 import { addExpense } from "../services/expenseService";
 import { ToastContainer,toast } from "react-toastify";
+<<<<<<< HEAD
 
+=======
+>>>>>>> 52c9948 (Advisory System and Implement toast for alerts)
 
 
 export default function AddExpense() {
@@ -16,6 +19,7 @@ export default function AddExpense() {
   const [aiInput, setAiInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
 
+<<<<<<< HEAD
   const handleAIParse = async () => {
     if (!aiInput.trim()) return;
 
@@ -23,12 +27,14 @@ export default function AddExpense() {
       setAiLoading(true);
 
   
+=======
+>>>>>>> 52c9948 (Advisory System and Implement toast for alerts)
   const handleAIParse = async () => {
     if (!aiInput.trim()) return;
-    
+
     try {
       setAiLoading(true);
-      
+
       const parsed = await parseExpenseMessage(aiInput);
       setFormData((prev) => ({
         ...prev,
@@ -41,14 +47,20 @@ export default function AddExpense() {
       toast.error(err.message || "Some error occurred", {
         className: "glass-error-toast",
       });
+<<<<<<< HEAD
       alert("Could not parse expense");
+=======
+>>>>>>> 52c9948 (Advisory System and Implement toast for alerts)
       console.error(error);
     } finally {
       setAiLoading(false);
     }
   };
 
+<<<<<<< HEAD
   
+=======
+>>>>>>> 52c9948 (Advisory System and Implement toast for alerts)
   const categories = [
     "Food",
     "Transport",
@@ -80,7 +92,10 @@ export default function AddExpense() {
       toast.success("Expense saved successfully",{
         className: "glass-success-toast",
       });
+<<<<<<< HEAD
       alert("Expense saved successfully");
+=======
+>>>>>>> 52c9948 (Advisory System and Implement toast for alerts)
 
       // reset form after save
       setFormData({
@@ -94,7 +109,10 @@ export default function AddExpense() {
       toast.error("Failed to save expense",{
         className: "glass-error-toast",
       });
+<<<<<<< HEAD
       alert("Failed to save expense");
+=======
+>>>>>>> 52c9948 (Advisory System and Implement toast for alerts)
     }
   };
 
