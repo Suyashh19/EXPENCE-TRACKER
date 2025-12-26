@@ -2,6 +2,7 @@ import { useState } from "react";
 import { registerUser, loginWithGoogle } from "../services/authService";
 import { useNavigate, Link } from "react-router-dom";
 import { Mail, Lock } from "lucide-react";
+import { ToastContainer,toast } from "react-toastify";
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -14,7 +15,10 @@ export default function Register() {
       await registerUser(email, password);
       navigate("/dashboard");
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message || "Some error occurred", {
+              className: "error-toast",
+              bodyClassName: "error-toast-body",
+            });
     }
   };
 
@@ -23,7 +27,10 @@ export default function Register() {
       await loginWithGoogle();
       navigate("/dashboard");
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message || "Some error occurred", {
+        className: "error-toast",
+        bodyClassName: "error-toast-body",
+      });
     }
   };
 
@@ -130,6 +137,7 @@ export default function Register() {
           </Link>
         </p>
       </div>
+      <ToastContainer />
     </div>
   );
 }

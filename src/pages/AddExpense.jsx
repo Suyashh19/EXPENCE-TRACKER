@@ -2,7 +2,7 @@ import { parseExpenseMessage } from "../services/geminiService";
 import { useState } from "react";
 import Navbar from "../components/Navbar";
 import { addExpense } from "../services/expenseService";
-
+import { ToastContainer,toast } from "react-toastify";
 
 
 export default function AddExpense() {
@@ -14,13 +14,13 @@ export default function AddExpense() {
   });
   const [aiInput, setAiInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
-  
+
   const handleAIParse = async () => {
     if (!aiInput.trim()) return;
-    
+
     try {
       setAiLoading(true);
-      
+
       const parsed = await parseExpenseMessage(aiInput);
       setFormData((prev) => ({
         ...prev,
@@ -30,13 +30,15 @@ export default function AddExpense() {
         date: parsed.date || prev.date,
       }));
     } catch (error) {
-      alert("Could not parse expense");
+      toast.error(err.message || "Some error occurred", {
+        className: "glass-error-toast",
+      });
       console.error(error);
     } finally {
       setAiLoading(false);
     }
   };
-  
+
   const categories = [
     "Food",
     "Transport",
@@ -65,7 +67,9 @@ export default function AddExpense() {
         date: formData.date,
       });
 
-      alert("Expense saved successfully");
+      toast.success("Expense saved successfully",{
+        className: "glass-success-toast",
+      });
 
       // reset form after save
       setFormData({
@@ -76,7 +80,9 @@ export default function AddExpense() {
       });
     } catch (error) {
       console.error(error);
-      alert("Failed to save expense");
+      toast.error("Failed to save expense",{
+        className: "glass-error-toast",
+      });
     }
   };
 
@@ -200,6 +206,7 @@ export default function AddExpense() {
           <div className="absolute -left-10 -bottom-10 h-32 w-32 rounded-full bg-blue-400/10 blur-3xl"></div>
         </div>
       </div>
+      <ToastContainer />
     </div>
   );
 }
