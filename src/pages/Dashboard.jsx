@@ -7,11 +7,13 @@ import {
 } from "../services/expenseService";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../services/firebase";
+import { compareCurrAndPrev } from "../services/expenseService";
 
 export default function Dashboard() {
   const [stats, setStats] = useState([]);
   const [recent, setRecent] = useState([]);
-
+  const today = new Date()
+  const [monthComparison, setMonthComparison] = useState(null);
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) return;
@@ -19,11 +21,19 @@ export default function Dashboard() {
       // 🔹 Fetch totals
       const data = await getDashboardStats();
 
+      const comparison = await compareCurrAndPrev(
+        today.getMonth() + 1,
+        today.getFullYear()
+      );
+
+      setMonthComparison(comparison);
+
+
       if (data) {
         setStats([
           {
-            label: "Today's Expense",
-            val: `$${data.todayTotal}`,
+            label: "This Month",
+            val: `$${data.monthTotal}`,
             trend: "",
             up: true,
           },
@@ -34,7 +44,7 @@ export default function Dashboard() {
             up: true,
           },
           {
-            label: "Total Orders",
+            label: "Transactions",
             val: data.totalOrders,
             trend: "",
             up: true,
@@ -49,6 +59,37 @@ export default function Dashboard() {
 
     return () => unsubscribe();
   }, []);
+  const renderMonthTrend = () => {
+    if (!monthComparison) return null;
+
+    if (monthComparison.percentageChange === null) {
+      return (
+        <p className="text-xs font-bold text-slate-400 mt-2">
+          No expenses last month
+        </p>
+      );
+    }
+
+    const isDecrease = monthComparison.percentageChange < 0;
+    const isIncrease = monthComparison.percentageChange > 0;
+
+    return (
+      <div
+        className={`mt-3 flex items-center gap-1 text-sm font-black ${isDecrease ? "text-emerald-500" : "text-red-500"
+          }`}
+      >
+        <span>
+          {isDecrease ? "↓" : isIncrease ? "↑" : "→"}
+        </span>
+        <span>
+          {Math.abs(monthComparison.percentageChange)}%
+        </span>
+        <span className="text-xs font-bold opacity-80">
+          {isDecrease ? "less than last month" : "more than last month"}
+        </span>
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-col gap-8">
@@ -72,6 +113,7 @@ export default function Dashboard() {
             <div className="mt-4 text-sm font-black text-emerald-500"></div>
 
             <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10 blur-2xl group-hover:bg-white/20 transition-all"></div>
+            {stat.label === "This Month" && renderMonthTrend()}
           </div>
         ))}
       </div>
