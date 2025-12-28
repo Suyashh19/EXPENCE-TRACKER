@@ -1,17 +1,18 @@
 import React from "react";
+import { auth } from "../services/firebase";
 
 const Navbar = () => {
   return (
     <header className="flex h-24 items-center justify-between rounded-[2.5rem] thin-glass px-10">
       <div>
-        <h1 className="text-xl font-black text-slate-900">Hi, Jubed</h1>
+        <h1 className="text-xl font-black text-slate-900">Hi,{auth.currentUser?.providerData[0].email.split('@')[0] || "User"}</h1>
         <p className="text-sm font-semibold text-slate-400">Welcome back to Ecomic ✨</p>
       </div>
       
       <div className="flex items-center gap-6">
         {/* Search Bar */}
         <div className="w-64 rounded-full border border-white/60 bg-white/20 px-6 py-3 text-sm font-medium text-slate-400 shadow-inner backdrop-blur-md">
-          Search anything...
+          Search anything....
         </div>
         
         {/* Action Button */}
