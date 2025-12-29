@@ -95,10 +95,6 @@ export default function App() {
           path="/settings"
           element={<GlassLayout><Settings /></GlassLayout>}
         />
-        <Route
-  path="/settings/preferences"
-  element={<GlassLayout><Preferences /></GlassLayout>}
-/>
       </Routes>
     </BrowserRouter>
   );
