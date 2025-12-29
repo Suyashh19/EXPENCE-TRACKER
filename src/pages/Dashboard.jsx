@@ -4,61 +4,37 @@ import Charts from "../components/Charts";
 import {
   getDashboardStats,
   getRecentExpenses,
+  compareCurrAndPrev,
 } from "../services/expenseService";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../services/firebase";
-import { compareCurrAndPrev } from "../services/expenseService";
 
 export default function Dashboard() {
-  const [stats, setStats] = useState([]);
+  const [statsData, setStatsData] = useState(null);
   const [recent, setRecent] = useState([]);
-  const today = new Date()
   const [monthComparison, setMonthComparison] = useState(null);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) return;
 
-      // 🔹 Fetch totals
       const data = await getDashboardStats();
+      setStatsData(data);
 
+      const today = new Date();
       const comparison = await compareCurrAndPrev(
         today.getMonth() + 1,
         today.getFullYear()
       );
-
       setMonthComparison(comparison);
 
-
-      if (data) {
-        setStats([
-          {
-            label: "This Month",
-            val: `$${data.monthTotal}`,
-            trend: "",
-            up: true,
-          },
-          {
-            label: "Total Expense",
-            val: `$${data.totalAmount}`,
-            trend: "",
-            up: true,
-          },
-          {
-            label: "Transactions",
-            val: data.totalOrders,
-            trend: "",
-            up: true,
-          },
-        ]);
-      }
-
-      // 🔹 Fetch recent activity
       const recentData = await getRecentExpenses();
       setRecent(recentData);
     });
 
     return () => unsubscribe();
   }, []);
+
   const renderMonthTrend = () => {
     if (!monthComparison) return null;
 
@@ -75,15 +51,12 @@ export default function Dashboard() {
 
     return (
       <div
-        className={`mt-3 flex items-center gap-1 text-sm font-black ${isDecrease ? "text-emerald-500" : "text-red-500"
-          }`}
+        className={`mt-3 flex items-center gap-1 text-sm font-black ${
+          isDecrease ? "text-emerald-500" : "text-red-500"
+        }`}
       >
-        <span>
-          {isDecrease ? "↓" : isIncrease ? "↑" : "→"}
-        </span>
-        <span>
-          {Math.abs(monthComparison.percentageChange)}%
-        </span>
+        <span>{isDecrease ? "↓" : isIncrease ? "↑" : "→"}</span>
+        <span>{Math.abs(monthComparison.percentageChange)}%</span>
         <span className="text-xs font-bold opacity-80">
           {isDecrease ? "less than last month" : "more than last month"}
         </span>
@@ -91,42 +64,38 @@ export default function Dashboard() {
     );
   };
 
+  if (!statsData) return null;
+
   return (
     <div className="flex flex-col gap-8">
       <Navbar />
 
       {/* STATS GRID */}
       <div className="grid grid-cols-3 gap-8">
-        {stats.map((stat) => (
-          <div
-            key={stat.label}
-            className="group relative overflow-hidden rounded-[3.5rem] thin-glass p-10 transition-all hover:-translate-y-2"
-          >
-            <p className="text-xs font-black uppercase tracking-widest text-slate-400">
-              {stat.label}
-            </p>
+        
 
-            <h3 className="mt-4 text-4xl font-black text-slate-900">
-              {stat.val}
-            </h3>
+        <StatCard
+          label="Total Expense"
+          value={`$${statsData.totalAmount}`}
+        />
 
-            <div className="mt-4 text-sm font-black text-emerald-500"></div>
-
-            <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10 blur-2xl group-hover:bg-white/20 transition-all"></div>
-            {stat.label === "This Month" && renderMonthTrend()}
-          </div>
-        ))}
+        <div className="group relative overflow-hidden rounded-[3.5rem] thin-glass p-10">
+          <p className="text-xs font-black uppercase tracking-widest text-slate-400">
+            This Month
+          </p>
+          <h3 className="mt-4 text-4xl font-black text-slate-900">
+            ${statsData.monthTotal}
+          </h3>
+          {renderMonthTrend()}
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-8 mb-10">
-        {/* SALES ANALYSIS (UNCHANGED) */}
+        {/* SALES ANALYSIS */}
         <div className="col-span-2 rounded-[4rem] thin-glass p-12 shadow-2xl">
-          <div className="flex justify-between items-center mb-10">
-            <h3 className="text-2xl font-black tracking-tight text-slate-900">
-              Sales Analysis
-            </h3>
-          </div>
-
+          <h3 className="text-2xl font-black text-slate-900">
+            Sales Analysis
+          </h3>
           <div className="h-64">
             <Charts />
           </div>
@@ -142,23 +111,21 @@ export default function Dashboard() {
             {recent.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center gap-4 border-b border-white/20 pb-4 last:border-0"
+                className="flex items-center gap-4 border-b pb-4"
               >
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-slate-100 to-white border border-white/80 shadow-sm flex items-center justify-center font-bold text-blue-600">
+                <div className="w-12 h-12 rounded-2xl bg-white shadow flex items-center justify-center font-bold text-blue-600">
                   ID
                 </div>
 
                 <div className="flex-1">
-                  <p className="text-sm font-black text-slate-800">
-                    {item.title}
-                  </p>
-                  <p className="text-[10px] font-bold text-slate-400 tracking-wider">
+                  <p className="font-black">{item.title}</p>
+                  <p className="text-xs text-slate-400">
                     {item.category}
                   </p>
                 </div>
 
-                <p className="text-sm font-black text-emerald-500">
-                  +${item.amount}
+                <p className="font-black text-emerald-500">
+                  ${item.amount}
                 </p>
               </div>
             ))}
@@ -168,3 +135,14 @@ export default function Dashboard() {
     </div>
   );
 }
+
+const StatCard = ({ label, value }) => (
+  <div className="group relative overflow-hidden rounded-[3.5rem] thin-glass p-10">
+    <p className="text-xs font-black uppercase tracking-widest text-slate-400">
+      {label}
+    </p>
+    <h3 className="mt-4 text-4xl font-black text-slate-900">
+      {value}
+    </h3>
+  </div>
+);
