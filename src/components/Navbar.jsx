@@ -23,7 +23,7 @@ const Navbar = () => {
           Hi, {firstName || "User"}
         </h1>
         <p className="text-sm font-semibold text-slate-400">
-          Welcome back to Finora ✨
+          Welcome back to Ecomic ✨
         </p>
       </div>
 
@@ -32,7 +32,7 @@ const Navbar = () => {
         <div className="w-64 rounded-full border border-white/60 bg-white/20 px-6 py-3 text-sm font-medium text-slate-400 shadow-inner backdrop-blur-md">
           Search anything...
         </div>
-        
+
         {/* Action Button */}
         <button className="rounded-2xl bg-blue-600 px-8 py-3.5 text-sm font-black text-white shadow-xl shadow-blue-200 active:scale-95 transition-all cursor-pointer">
           + Add New

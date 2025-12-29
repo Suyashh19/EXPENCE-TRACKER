@@ -4,6 +4,7 @@ import Charts from "../components/Charts";
 import {
   getDashboardStats,
   getRecentExpenses,
+  compareCurrAndPrev,
 } from "../services/expenseService";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../services/firebase";
@@ -11,6 +12,7 @@ import { auth } from "../services/firebase";
 export default function Dashboard() {
   const [statsData, setStatsData] = useState(null);
   const [recent, setRecent] = useState([]);
+  const [monthComparison, setMonthComparison] = useState(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -19,6 +21,13 @@ export default function Dashboard() {
       const data = await getDashboardStats();
       setStatsData(data);
 
+      const today = new Date();
+      const comparison = await compareCurrAndPrev(
+        today.getMonth() + 1,
+        today.getFullYear()
+      );
+      setMonthComparison(comparison);
+
       const recentData = await getRecentExpenses();
       setRecent(recentData);
     });
@@ -26,34 +35,62 @@ export default function Dashboard() {
     return () => unsubscribe();
   }, []);
 
+  const renderMonthTrend = () => {
+    if (!monthComparison) return null;
+
+    if (monthComparison.percentageChange === null) {
+      return (
+        <p className="text-xs font-bold text-slate-400 mt-2">
+          No expenses last month
+        </p>
+      );
+    }
+
+    const isDecrease = monthComparison.percentageChange < 0;
+    const isIncrease = monthComparison.percentageChange > 0;
+
+    return (
+      <div
+        className={`mt-3 flex items-center gap-1 text-sm font-black ${
+          isDecrease ? "text-emerald-500" : "text-red-500"
+        }`}
+      >
+        <span>{isDecrease ? "↓" : isIncrease ? "↑" : "→"}</span>
+        <span>{Math.abs(monthComparison.percentageChange)}%</span>
+        <span className="text-xs font-bold opacity-80">
+          {isDecrease ? "less than last month" : "more than last month"}
+        </span>
+      </div>
+    );
+  };
+
   if (!statsData) return null;
 
   return (
     <div className="flex flex-col gap-8">
-
-      {/* NAVBAR */}
       <Navbar />
 
       {/* STATS GRID */}
       <div className="grid grid-cols-3 gap-8">
-        <StatCard
-          label="Today's Expense"
-          value={`$${statsData.todayTotal}`}
-        />
+        
 
         <StatCard
           label="Total Expense"
           value={`$${statsData.totalAmount}`}
         />
 
-        <StatCard
-          label="Total Orders"
-          value={statsData.totalOrders}
-        />
+        <div className="group relative overflow-hidden rounded-[3.5rem] thin-glass p-10">
+          <p className="text-xs font-black uppercase tracking-widest text-slate-400">
+            This Month
+          </p>
+          <h3 className="mt-4 text-4xl font-black text-slate-900">
+            ${statsData.monthTotal}
+          </h3>
+          {renderMonthTrend()}
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-8 mb-10">
-
         {/* SALES ANALYSIS */}
         <div className="col-span-2 rounded-[4rem] thin-glass p-12 shadow-2xl">
           <h3 className="text-2xl font-black text-slate-900">
