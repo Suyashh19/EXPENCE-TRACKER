@@ -30,7 +30,7 @@ const Navbar = () => {
       <div className="flex items-center gap-6">
         {/* Search Bar */}
         <div className="w-64 rounded-full border border-white/60 bg-white/20 px-6 py-3 text-sm font-medium text-slate-400 shadow-inner backdrop-blur-md">
-          Search anything...
+          Search anything....
         </div>
 
         {/* Action Button */}

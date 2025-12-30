@@ -1,13 +1,8 @@
-import { parseExpenseMessage } from "../services/geminiService";
 import { useState } from "react";
 import Navbar from "../components/Navbar";
 import { addExpense } from "../services/expenseService";
-import { ToastContainer,toast } from "react-toastify";
-<<<<<<< HEAD
-
-=======
->>>>>>> 52c9948 (Advisory System and Implement toast for alerts)
-
+import { parseExpenseMessage } from "../services/geminiService";
+import { ToastContainer, toast } from "react-toastify";
 
 export default function AddExpense() {
   const [formData, setFormData] = useState({
@@ -16,26 +11,22 @@ export default function AddExpense() {
     category: "Food",
     date: new Date().toISOString().split("T")[0],
   });
+
   const [aiInput, setAiInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
 
-<<<<<<< HEAD
+  // ✅ AI PARSE HANDLER (FIXED)
   const handleAIParse = async () => {
-    if (!aiInput.trim()) return;
-
-    try {
-      setAiLoading(true);
-
-  
-=======
->>>>>>> 52c9948 (Advisory System and Implement toast for alerts)
-  const handleAIParse = async () => {
-    if (!aiInput.trim()) return;
+    if (!aiInput.trim()) {
+      toast.warning("Please enter an expense message");
+      return;
+    }
 
     try {
       setAiLoading(true);
 
       const parsed = await parseExpenseMessage(aiInput);
+
       setFormData((prev) => ({
         ...prev,
         title: parsed.title || "NA",
@@ -43,24 +34,20 @@ export default function AddExpense() {
         category: parsed.category || "Food",
         date: parsed.date || prev.date,
       }));
+
+      toast.success("Expense parsed successfully ✨", {
+        className: "glass-success-toast",
+      });
     } catch (error) {
-      toast.error(err.message || "Some error occurred", {
+      console.error("AI Parse Error:", error);
+      toast.error("Could not parse expense. Try again.", {
         className: "glass-error-toast",
       });
-<<<<<<< HEAD
-      alert("Could not parse expense");
-=======
->>>>>>> 52c9948 (Advisory System and Implement toast for alerts)
-      console.error(error);
     } finally {
       setAiLoading(false);
     }
   };
 
-<<<<<<< HEAD
-  
-=======
->>>>>>> 52c9948 (Advisory System and Implement toast for alerts)
   const categories = [
     "Food",
     "Transport",
@@ -89,43 +76,31 @@ export default function AddExpense() {
         date: formData.date,
       });
 
-      toast.success("Expense saved successfully",{
+      toast.success("Expense saved successfully 💸", {
         className: "glass-success-toast",
       });
-<<<<<<< HEAD
-      alert("Expense saved successfully");
-=======
->>>>>>> 52c9948 (Advisory System and Implement toast for alerts)
 
-      // reset form after save
       setFormData({
         title: "",
         amount: "",
         category: "Food",
         date: new Date().toISOString().split("T")[0],
       });
+      setAiInput("");
     } catch (error) {
       console.error(error);
-      toast.error("Failed to save expense",{
+      toast.error("Failed to save expense", {
         className: "glass-error-toast",
       });
-<<<<<<< HEAD
-      alert("Failed to save expense");
-=======
->>>>>>> 52c9948 (Advisory System and Implement toast for alerts)
     }
   };
 
-
   return (
     <div className="flex flex-col gap-8">
-      {/* Reusable Navbar */}
       <Navbar />
 
-      {/* CENTERED GLASS FORM CONTAINER */}
       <div className="flex justify-center items-center py-10">
         <div className="w-full max-w-2xl rounded-[3.5rem] thin-glass p-12 shadow-2xl relative overflow-hidden">
-          {/* Form Header */}
           <div className="mb-10 text-center">
             <h2 className="text-3xl font-black tracking-tight text-slate-900">
               Add New Expense
@@ -134,7 +109,8 @@ export default function AddExpense() {
               Track your spending with precision
             </p>
           </div>
-          {/* AI Expense Input */}
+
+          {/* AI INPUT */}
           <div className="mb-10 space-y-4">
             <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-4">
               Add Expense using AI
@@ -151,14 +127,14 @@ export default function AddExpense() {
               type="button"
               onClick={handleAIParse}
               disabled={aiLoading}
-              className="rounded-xl bg-purple-600 px-6 py-3 text-white font-black hover:scale-105 transition"
+              className="rounded-xl bg-purple-600 px-6 py-3 text-white font-black hover:scale-105 transition disabled:opacity-50"
             >
               {aiLoading ? "Parsing..." : "Parse with AI"}
             </button>
           </div>
 
           <form className="space-y-8" onSubmit={handleSubmit}>
-            {/* Title Input */}
+            {/* TITLE */}
             <div className="space-y-3">
               <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-4">
                 Expense Title
@@ -169,27 +145,24 @@ export default function AddExpense() {
                 value={formData.title}
                 onChange={handleChange}
                 placeholder="e.g., Starbucks Coffee"
-                className="w-full rounded-2xl border border-white/80 bg-white/20 px-6 py-4 text-slate-900 placeholder:text-slate-300 outline-none focus:ring-2 focus:ring-blue-500/50 transition-all backdrop-blur-md"
+                className="w-full rounded-2xl border border-white/80 bg-white/20 px-6 py-4 outline-none"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-6">
-              {/* Amount Input */}
               <div className="space-y-3">
                 <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-4">
-                  Amount ($)
+                  Amount
                 </label>
                 <input
                   type="number"
                   name="amount"
                   value={formData.amount}
                   onChange={handleChange}
-                  placeholder="0.00"
-                  className="w-full rounded-2xl border border-white/80 bg-white/20 px-6 py-4 text-slate-900 placeholder:text-slate-300 outline-none focus:ring-2 focus:ring-blue-500/50 transition-all backdrop-blur-md"
+                  className="w-full rounded-2xl border border-white/80 bg-white/20 px-6 py-4 outline-none"
                 />
               </div>
 
-              {/* Date Input */}
               <div className="space-y-3">
                 <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-4">
                   Date
@@ -199,12 +172,11 @@ export default function AddExpense() {
                   name="date"
                   value={formData.date}
                   onChange={handleChange}
-                  className="w-full rounded-2xl border border-white/80 bg-white/20 px-6 py-4 text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/50 transition-all backdrop-blur-md"
+                  className="w-full rounded-2xl border border-white/80 bg-white/20 px-6 py-4 outline-none"
                 />
               </div>
             </div>
 
-            {/* Category Select */}
             <div className="space-y-3">
               <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-4">
                 Category
@@ -213,7 +185,7 @@ export default function AddExpense() {
                 name="category"
                 value={formData.category}
                 onChange={handleChange}
-                className="w-full rounded-2xl border border-white/80 bg-white/20 px-6 py-4 text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/50 transition-all backdrop-blur-md appearance-none"
+                className="w-full rounded-2xl border border-white/80 bg-white/20 px-6 py-4 outline-none"
               >
                 {categories.map((cat) => (
                   <option key={cat} value={cat}>
@@ -223,19 +195,18 @@ export default function AddExpense() {
               </select>
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
-              className="w-full mt-4 rounded-3xl bg-blue-600 py-5 text-lg font-black text-white shadow-2xl shadow-blue-400/40 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
+              className="w-full mt-4 rounded-3xl bg-blue-600 py-5 text-lg font-black text-white hover:scale-[1.02] transition"
             >
               Save Transaction
             </button>
           </form>
 
-          {/* Decorative Corner Glow */}
           <div className="absolute -left-10 -bottom-10 h-32 w-32 rounded-full bg-blue-400/10 blur-3xl"></div>
         </div>
       </div>
+
       <ToastContainer />
     </div>
   );
