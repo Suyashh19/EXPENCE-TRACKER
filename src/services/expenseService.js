@@ -145,16 +145,22 @@ export const getDashboardStats = async () => {
   const expenses = snapshot.docs.map((doc) => doc.data());
 
   const today1 = new Date()
-  // const today = today1.toISOString().split("T")[0];
+  const today = today1.toISOString().split("T")[0];
   let totalAmount = expenses.reduce((sum, exp) => {
     return sum = sum + exp.amount
   }, 0)
   let monthTotal = await getUserExpensesByMonth(today1.getMonth() + 1, today1.getFullYear())
+  let todayTotal = expenses.filter((exp)=>{
+    return (exp.date === today)
+  }).reduce((sum,exp)=>{
+    return sum=sum+exp.amount
+  },0)
 
   return {
     monthTotal,
     totalAmount,
     totalOrders: expenses.length,
+    todayTotal,
   };
 };
 

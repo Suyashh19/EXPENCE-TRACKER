@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
-import { Charts } from "../components/Charts";
 import {
   getDashboardStats,
   getRecentExpenses,
@@ -8,7 +7,6 @@ import {
 } from "../services/expenseService";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../services/firebase";
-import { compareCurrAndPrev } from "../services/expenseService";
 import { Chart } from "react-google-charts";
 import { getUserExpenses } from "../services/expenseService";
 
@@ -19,6 +17,7 @@ export default function Dashboard() {
   const [chartData, setChartData] = useState([
     ["Month", "Expenses", { role: "style" }],
   ]);
+  const today = new Date()
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -131,7 +130,12 @@ export default function Dashboard() {
           </h3>
           {renderMonthTrend()}
         </div>
+        <StatCard
+          label="Today's Expenses"
+          value={`$${statsData.todayTotal}`}
+        />
       </div>
+      
 
       <div className="grid grid-cols-3 gap-8 mb-10">
         {/* SALES ANALYSIS */}

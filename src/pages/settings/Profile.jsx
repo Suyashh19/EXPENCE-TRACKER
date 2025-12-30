@@ -5,6 +5,8 @@ import {
   getUserProfile,
   updateUserProfile,
 } from "../../services/settingsService";
+import { toast,ToastContainer } from "react-toastify";
+
 
 export default function Profile() {
   const [fullName, setFullName] = useState("");
@@ -29,7 +31,9 @@ export default function Profile() {
 
   const handleSave = async () => {
     await updateUserProfile(fullName);
-    alert("Profile updated successfully");
+    toast.success("Profile updated successfully",{
+        className: "glass-success-toast",
+      });
   };
 
   if (loading) {
@@ -72,6 +76,7 @@ export default function Profile() {
           Save Changes
         </button>
       </div>
+      <ToastContainer />
     </div>
   );
 }

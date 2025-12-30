@@ -22,7 +22,7 @@ const Sidebar = () => {
         <h2 className="text-2xl font-black text-slate-900">Finora</h2>
       </div>
 
-      <nav className="flex-1 space-y-4">
+      <nav className="flex-1">
         {menuItems.map((item) => (
           <div
             key={item.path}
