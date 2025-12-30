@@ -10,6 +10,9 @@ import Landing from "./pages/Landing";
 import PublicLayout from "./layouts/PublicLayout";
 import Advice from "./pages/Advice";
 import { getUserExpenses } from "./services/expenseService";
+import Settings from "./pages/settings/Settings";
+import Preferences from "./pages/settings/Preferences";
+
 
 // Glass layout for authenticated pages
 const GlassLayout = ({ children }) => {
@@ -87,6 +90,10 @@ export default function App() {
         <Route
           path="/advice"
           element={<GlassLayout><Advice promiseExpenseSummary={getUserExpenses()} /></GlassLayout>}
+        />
+        <Route
+          path="/settings"
+          element={<GlassLayout><Settings /></GlassLayout>}
         />
       </Routes>
     </BrowserRouter>
