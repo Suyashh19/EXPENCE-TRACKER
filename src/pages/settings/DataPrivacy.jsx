@@ -4,6 +4,7 @@ import {
   exportUserData,
   deleteAccount,
 } from "../../services/dataPrivacyService";
+import { toast , ToastContainer } from "react-toastify";
 
 export default function DataPrivacy() {
   const user = auth.currentUser;
@@ -34,10 +35,12 @@ export default function DataPrivacy() {
     try {
       setLoading(true);
       await deleteAccount(password);
-      alert("Account deleted permanently");
+      toast.success("Account deleted permanently",{
+        className: "glass-success-toast",
+      });
       window.location.href = "/";
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -104,6 +107,7 @@ export default function DataPrivacy() {
           </div>
         )}
       </div>
+      <ToastContainer />
     </div>
   );
 }

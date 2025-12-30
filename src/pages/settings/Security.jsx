@@ -4,6 +4,7 @@ import {
   changePassword,
   sendResetLink,
 } from "../../services/securityService";
+import { toast,ToastContainer } from "react-toastify";
 
 export default function Security() {
   const user = auth.currentUser;
@@ -34,11 +35,13 @@ export default function Security() {
     try {
       setLoading(true);
       await changePassword(currentPassword, newPassword);
-      alert("Password updated successfully");
+      toast.success("Password updated successfully",{
+        className: "glass-success-toast",
+      });
       setCurrentPassword("");
       setNewPassword("");
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -47,9 +50,9 @@ export default function Security() {
   const handleReset = async () => {
     try {
       await sendResetLink();
-      alert("Password reset email sent");
+      toast.info("Password reset email sent");
     } catch (err) {
-      alert(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -62,7 +65,7 @@ export default function Security() {
         placeholder="Current Password"
         value={currentPassword}
         onChange={(e) => setCurrentPassword(e.target.value)}
-        className="w-full rounded-xl p-4"
+        className="w-full rounded-xl p-4 border border-gray-500"
       />
 
       <input
@@ -70,7 +73,7 @@ export default function Security() {
         placeholder="New Password"
         value={newPassword}
         onChange={(e) => setNewPassword(e.target.value)}
-        className="w-full rounded-xl p-4"
+        className="w-full rounded-xl p-4 border border-gray-500"
       />
 
       <button
