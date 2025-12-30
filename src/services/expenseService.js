@@ -27,7 +27,7 @@ export const addExpense = async ({ title, amount, category, date }) => {
 };
 
 // GET ALL USER EXPENSES
-export const getUserExpenses = async () => {
+export const getUserExpenses = async () => { 
   const user = auth.currentUser;
   if (!user) return [];
 

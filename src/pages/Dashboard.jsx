@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
-import Charts from "../components/Charts";
+import { Charts } from "../components/Charts";
 import {
   getDashboardStats,
   getRecentExpenses,
@@ -8,12 +8,55 @@ import {
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../services/firebase";
 import { compareCurrAndPrev } from "../services/expenseService";
+import { Chart } from "react-google-charts";
+import { getUserExpenses } from "../services/expenseService";
 
 export default function Dashboard() {
   const [stats, setStats] = useState([]);
   const [recent, setRecent] = useState([]);
   const today = new Date()
   const [monthComparison, setMonthComparison] = useState(null);
+  const [chartData, setChartData] = useState([
+    ["Month", "Expenses", { role: "style" }],
+  ]);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) return;
+
+      const expenses = await getUserExpenses();
+
+      const filterFunction = (monthNum) => {
+        return expenses
+          .filter((exp) => {
+            const [year, month] = exp.date.split("-").map(Number);
+            return year === today.getFullYear() && month === monthNum;
+          })
+          .reduce((sum, exp) => sum + exp.amount, 0);
+      };
+
+      setChartData([
+        ["Month", "Expenses", { role: "style" }],
+        ["Jan", filterFunction(1), "#434E78"],
+        ["Feb", filterFunction(2), "#434E78"],
+        ["Mar", filterFunction(3), "#434E78"],
+        ["Apr", filterFunction(4), "#434E78"],
+        ["May", filterFunction(5), "#434E78"],
+        ["Jun", filterFunction(6), "#434E78"],
+        ["Jul", filterFunction(7), "#434E78"],
+        ["Aug", filterFunction(8), "#434E78"],
+        ["Sep", filterFunction(9), "#434E78"],
+        ["Oct", filterFunction(10), "#434E78"],
+        ["Nov", filterFunction(11), "#434E78"],
+        ["Dec", filterFunction(12), "#434E78"],
+      ]);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) return;
@@ -128,7 +171,25 @@ export default function Dashboard() {
           </div>
 
           <div className="h-64">
-            <Charts />
+            {chartData.length > 1 && (
+              <Chart
+                chartType="ColumnChart"
+                width="100%"
+                height="100%"
+                data={chartData}
+                options={{
+                  backgroundColor: "transparent",
+                  legend: { position: "none" },
+                  colors: ["#2563eb"],
+                  chartArea: { width: "85%", height: "70%" },
+                  hAxis: { textStyle: { color: "#64748b" } },
+                  vAxis: {
+                    textStyle: { color: "#64748b" },
+                    gridlines: { color: "transparent" },
+                  },
+                }}
+              />
+            )}
           </div>
         </div>
 
