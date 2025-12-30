@@ -18,6 +18,22 @@ export default function Dashboard() {
     ["Month", "Expenses", { role: "style" }],
   ]);
   const today = new Date()
+  const [chartType, setChartType] = useState("ColumnChart");
+  const pieColors = [
+    "#2563eb", // Jan
+    "#22c55e", // Feb
+    "#f97316", // Mar
+    "#e11d48", // Apr
+    "#a855f7", // May
+    "#06b6d4", // Jun
+    "#84cc16", // Jul
+    "#facc15", // Aug
+    "#fb7185", // Sep
+    "#38bdf8", // Oct
+    "#c084fc", // Nov
+    "#f472b6", // Dec
+  ];
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -93,9 +109,8 @@ export default function Dashboard() {
 
     return (
       <div
-        className={`mt-3 flex items-center gap-1 text-sm font-black ${
-          isDecrease ? "text-emerald-500" : "text-red-500"
-        }`}
+        className={`mt-3 flex items-center gap-1 text-sm font-black ${isDecrease ? "text-emerald-500" : "text-red-500"
+          }`}
       >
         <span>{isDecrease ? "↓" : isIncrease ? "↑" : "→"}</span>
         <span>{Math.abs(monthComparison.percentageChange)}%</span>
@@ -114,7 +129,7 @@ export default function Dashboard() {
 
       {/* STATS GRID */}
       <div className="grid grid-cols-3 gap-8">
-        
+
 
         <StatCard
           label="Total Expense"
@@ -135,7 +150,7 @@ export default function Dashboard() {
           value={`$${statsData.todayTotal}`}
         />
       </div>
-      
+
 
       <div className="grid grid-cols-3 gap-8 mb-10">
         {/* SALES ANALYSIS */}
@@ -144,17 +159,41 @@ export default function Dashboard() {
             Sales Analysis
           </h3>
           <div className="h-64">
+            <label className="text-sm font-bold text-slate-600">
+              Choose Chart Type
+            </label>
+
+            <select
+              value={chartType}
+              onChange={(e) => setChartType(e.target.value)}
+              className="ml-4 rounded-lg border px-3 py-1 text-sm"
+            >
+              <option value="ColumnChart">Column (Bar)</option>
+              <option value="LineChart">Line</option>
+              <option value="AreaChart">Area</option>
+              <option value="PieChart">Pie</option>
+              <option value="SteppedAreaChart">Stepped Area</option>
+              <option value="ComboChart">Combo</option>
+            </select>
+
             {chartData.length > 1 && (
               <Chart
-                chartType="ColumnChart"
+                chartType={chartType}
                 width="100%"
                 height="100%"
                 data={chartData}
                 options={{
                   backgroundColor: "transparent",
-                  legend: { position: "none" },
-                  colors: ["#2563eb"],
-                  chartArea: { width: "85%", height: "70%" },
+
+                  legend: {
+                    position: chartType === "PieChart" ? "right" : "none",
+                    textStyle: { color: "#475569", fontSize: 12 },
+                  },
+
+                  colors: chartType === "PieChart" ? pieColors : ["#434E78"],
+
+                  chartArea: { width: "85%", height: "75%" },
+
                   hAxis: { textStyle: { color: "#64748b" } },
                   vAxis: {
                     textStyle: { color: "#64748b" },
@@ -162,6 +201,7 @@ export default function Dashboard() {
                   },
                 }}
               />
+
             )}
           </div>
         </div>
