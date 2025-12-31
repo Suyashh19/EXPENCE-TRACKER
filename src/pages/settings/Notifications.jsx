@@ -1,20 +1,24 @@
 import { useEffect, useState } from "react";
-import { getUserSettings, updateNotifications } from "../../services/userService";
+import {
+  getUserNotifications,
+  updateNotifications,
+} from "../../services/settingsService";
 
 export default function Notifications() {
   const [loading, setLoading] = useState(true);
-  const [settings, setSettings] = useState({
-    emailAlerts: false,
-    monthlyReports: false,
-    budgetAlerts: false,
-    dailyReminders: false,
+  const [notifications, setNotifications] = useState({
+    monthlyBudgetAlert: false,
+    dailyExpenseReminder: false,
   });
 
   useEffect(() => {
     const load = async () => {
-      const data = await getUserSettings();
-      if (data?.notifications) {
-        setSettings(data.notifications);
+      const data = await getUserNotifications();
+      if (data) {
+        setNotifications({
+          monthlyBudgetAlert: data.monthlyBudgetAlert ?? false,
+          dailyExpenseReminder: data.dailyExpenseReminder ?? false,
+        });
       }
       setLoading(false);
     };
@@ -22,37 +26,30 @@ export default function Notifications() {
   }, []);
 
   const toggle = async (key) => {
-    const updated = { ...settings, [key]: !settings[key] };
-    setSettings(updated);
+    const updated = {
+      ...notifications,
+      [key]: !notifications[key],
+    };
+    setNotifications(updated);
     await updateNotifications(updated);
   };
 
-  if (loading) return <p className="font-bold text-slate-400">Loading...</p>;
+  if (loading) {
+    return <p className="font-bold text-slate-400">Loading...</p>;
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-xl">
       <Toggle
-        label="Email Alerts"
-        value={settings.emailAlerts}
-        onChange={() => toggle("emailAlerts")}
+        label="Monthly Budget Alerts"
+        value={notifications.monthlyBudgetAlert}
+        onChange={() => toggle("monthlyBudgetAlert")}
       />
 
       <Toggle
-        label="Monthly Reports"
-        value={settings.monthlyReports}
-        onChange={() => toggle("monthlyReports")}
-      />
-
-      <Toggle
-        label="Budget Alerts"
-        value={settings.budgetAlerts}
-        onChange={() => toggle("budgetAlerts")}
-      />
-
-      <Toggle
-        label="Daily Expense Reminders"
-        value={settings.dailyReminders}
-        onChange={() => toggle("dailyReminders")}
+        label="Daily Expense Reminder"
+        value={notifications.dailyExpenseReminder}
+        onChange={() => toggle("dailyExpenseReminder")}
       />
     </div>
   );

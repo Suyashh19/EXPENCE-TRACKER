@@ -2,6 +2,7 @@ import { useState } from "react";
 import Navbar from "../components/Navbar";
 import { addExpense } from "../services/expenseService";
 import { parseExpenseMessage } from "../services/geminiService";
+import { getUserNotifications } from "../services/settingsService";
 import { ToastContainer, toast } from "react-toastify";
 
 export default function AddExpense() {
@@ -15,7 +16,9 @@ export default function AddExpense() {
   const [aiInput, setAiInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
 
-  // ✅ AI PARSE HANDLER (FIXED)
+  /* ============================
+     AI PARSE HANDLER
+  ============================ */
   const handleAIParse = async () => {
     if (!aiInput.trim()) {
       toast.warning("Please enter an expense message");
@@ -65,11 +68,14 @@ export default function AddExpense() {
     }));
   };
 
+  /* ============================
+     SUBMIT HANDLER (UPDATED)
+  ============================ */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      await addExpense({
+      const result = await addExpense({
         title: formData.title,
         amount: Number(formData.amount),
         category: formData.category,
@@ -80,6 +86,26 @@ export default function AddExpense() {
         className: "glass-success-toast",
       });
 
+      /* 🔔 MONTHLY BUDGET ALERT (80%+) */
+      const notifications = await getUserNotifications();
+
+      if (
+        notifications?.monthlyBudgetAlert &&
+        result?.monthlyBudget &&
+        result?.monthTotal / result.monthlyBudget >= 0.8
+      ) {
+        const percent = Math.round(
+          (result.monthTotal / result.monthlyBudget) * 100
+        );
+
+        toast.warning(
+          `⚠️ You have used ${percent}% of your monthly budget`,
+          {
+            autoClose: 6000,
+          }
+        );
+      }
+
       setFormData({
         title: "",
         amount: "",
@@ -89,9 +115,22 @@ export default function AddExpense() {
       setAiInput("");
     } catch (error) {
       console.error(error);
-      toast.error("Failed to save expense", {
-        className: "glass-error-toast",
-      });
+
+      if (
+        error?.message &&
+        error.message.includes("Monthly budget exceeded")
+      ) {
+        toast.error(
+          "🚫 Monthly budget exceeded. Please update your budget in Preferences.",
+          {
+            autoClose: 6000,
+          }
+        );
+      } else {
+        toast.error("Failed to save expense", {
+          className: "glass-error-toast",
+        });
+      }
     }
   };
 

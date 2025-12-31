@@ -10,6 +10,17 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../services/firebase";
 import { Chart } from "react-google-charts";
 
+/* 🔥 SETTINGS + HELPERS */
+import {
+  getUserPreferences,
+  getUserNotifications,
+} from "../services/settingsService";
+import {
+  getTodayTotal,
+  getCurrentMonthTotal,
+  getBudgetUsagePercent,
+} from "../utils/helpers";
+
 export default function Dashboard() {
   const [statsData, setStatsData] = useState(null);
   const [recent, setRecent] = useState([]);
@@ -20,6 +31,9 @@ export default function Dashboard() {
     ["Month", "Expenses", { role: "style" }],
   ]);
 
+  /* 🔒 DAILY REMINDER → prevent spam */
+  const [dailyAlertShown, setDailyAlertShown] = useState(false);
+
   const today = new Date();
 
   const pieColors = [
@@ -28,7 +42,9 @@ export default function Dashboard() {
     "#fb7185", "#38bdf8", "#c084fc", "#f472b6",
   ];
 
-  // 📊 Chart Data
+  /* ============================
+     📊 CHART DATA
+  ============================ */
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) return;
@@ -38,10 +54,11 @@ export default function Dashboard() {
       const totalForMonth = (monthNum) =>
         expenses
           .filter((exp) => {
+            if (!exp.date) return false;
             const [year, month] = exp.date.split("-").map(Number);
             return year === today.getFullYear() && month === monthNum;
           })
-          .reduce((sum, exp) => sum + exp.amount, 0);
+          .reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
 
       setChartData([
         ["Month", "Expenses", { role: "style" }],
@@ -63,7 +80,9 @@ export default function Dashboard() {
     return () => unsubscribe();
   }, []);
 
-  // 📈 Stats + Recent
+  /* ============================
+     📈 STATS + RECENT
+  ============================ */
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) return;
@@ -84,7 +103,55 @@ export default function Dashboard() {
     return () => unsubscribe();
   }, []);
 
-  // 📉 Month Trend Renderer (SINGLE VERSION)
+  /* ============================
+     🔔 NOTIFICATIONS (UPDATED)
+     ✅ Monthly alert repeats every time
+  ============================ */
+  useEffect(() => {
+    if (!statsData) return;
+
+    const runNotifications = async () => {
+      const expenses = await getUserExpenses();
+      const preferences = await getUserPreferences();
+      const notifications = await getUserNotifications();
+
+      if (!preferences || !notifications) return;
+
+      /* 🔔 DAILY EXPENSE REMINDER (ONCE PER SESSION) */
+      const hour = new Date().getHours();
+      if (
+        notifications.dailyExpenseReminder &&
+        hour >= 20 &&
+        !dailyAlertShown
+      ) {
+        const todayTotal = getTodayTotal(expenses);
+        alert(`You spent ₹${todayTotal} today`);
+        setDailyAlertShown(true);
+      }
+
+      /* 🔔 MONTHLY BUDGET ALERT (EVERY TIME ≥ 80%) */
+      if (
+        notifications.monthlyBudgetAlert &&
+        preferences.monthlyBudget > 0
+      ) {
+        const monthTotal = getCurrentMonthTotal(expenses);
+        const percent = getBudgetUsagePercent(
+          monthTotal,
+          preferences.monthlyBudget
+        );
+
+        if (percent >= 80) {
+          alert(`⚠️ You have used ${percent}% of your monthly budget`);
+        }
+      }
+    };
+
+    runNotifications();
+  }, [statsData]);
+
+  /* ============================
+     📉 MONTH TREND
+  ============================ */
   const renderMonthTrend = () => {
     if (!monthComparison) return null;
 
@@ -122,21 +189,21 @@ export default function Dashboard() {
 
       {/* STATS */}
       <div className="grid grid-cols-3 gap-8">
-        <StatCard label="Total Expense" value={`$${statsData.totalAmount}`} />
+        <StatCard label="Total Expense" value={`₹${statsData.totalAmount}`} />
 
         <div className="rounded-[3.5rem] thin-glass p-10">
           <p className="text-xs font-black uppercase tracking-widest text-slate-400">
             This Month
           </p>
           <h3 className="mt-4 text-4xl font-black text-slate-900">
-            ${statsData.monthTotal}
+            ₹{statsData.monthTotal}
           </h3>
           {renderMonthTrend()}
         </div>
 
         <StatCard
           label="Today's Expenses"
-          value={`$${statsData.todayTotal}`}
+          value={`₹${statsData.todayTotal}`}
         />
       </div>
 
@@ -184,7 +251,7 @@ export default function Dashboard() {
                   <p className="text-xs text-slate-400">{item.category}</p>
                 </div>
                 <p className="font-black text-emerald-500">
-                  ${item.amount}
+                  ₹{item.amount}
                 </p>
               </div>
             ))}

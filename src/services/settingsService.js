@@ -64,6 +64,7 @@ export const updateUserPreferences = async (preferences) => {
    NOTIFICATIONS
 ============================ */
 
+// UPDATE NOTIFICATIONS
 export const updateNotifications = async (notifications) => {
   const user = auth.currentUser;
   if (!user) return;
@@ -71,3 +72,34 @@ export const updateNotifications = async (notifications) => {
   const ref = doc(db, "users", user.uid);
   await setDoc(ref, { notifications }, { merge: true });
 };
+
+export const getUserNotifications = async () => {
+  const user = auth.currentUser;
+  if (!user) return null;
+
+  const ref = doc(db, "users", user.uid);
+  const snap = await getDoc(ref);
+
+  if (!snap.exists()) return null;
+
+  const raw = snap.data().notifications || {};
+
+  // 🔥 BACKWARD-COMPATIBLE NORMALIZATION
+  const normalized = {
+    monthlyBudgetAlert:
+      raw.monthlyBudgetAlert ?? raw.budgetAlerts ?? false,
+
+    dailyExpenseReminder:
+      raw.dailyExpenseReminder ?? raw.dailyReminders ?? false,
+  };
+
+  // 🔒 AUTO-MIGRATE (runs once per user)
+  await setDoc(
+    ref,
+    { notifications: normalized },
+    { merge: true }
+  );
+
+  return normalized;
+};
+

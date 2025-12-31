@@ -11,26 +11,14 @@ import {
 import { auth } from "./firebase";
 import { db } from "./firebase";
 
-// --------------------
-// ADD EXPENSE
-// --------------------
-export const addExpense = async ({ title, amount, category, date }) => {
-  const user = auth.currentUser;
-  if (!user) return;
+/* 🔥 NEW IMPORTS */
+import { getUserPreferences } from "./settingsService";
+import { getCurrentMonthTotal } from "../utils/helpers";
 
-  await addDoc(collection(db, "expenses"), {
-    title,
-    amount: Number(amount),
-    category,
-    date,
-    userId: user.uid,
-    createdAt: Timestamp.now(),
-  });
-};
+/* ============================
+   GET ALL USER EXPENSES
+============================ */
 
-// --------------------
-// GET ALL USER EXPENSES
-// --------------------
 export const getUserExpenses = async () => {
   const user = auth.currentUser;
   if (!user) return [];
@@ -48,9 +36,54 @@ export const getUserExpenses = async () => {
   }));
 };
 
-// --------------------
-// MONTHLY TOTAL
-// --------------------
+/* ============================
+   ADD EXPENSE (FIXED + FINAL)
+============================ */
+
+export const addExpense = async ({ title, amount, category, date }) => {
+  const user = auth.currentUser;
+  if (!user) throw new Error("User not authenticated");
+
+  const numericAmount = Number(amount);
+
+  /* 🔒 GET USER BUDGET */
+  const preferences = await getUserPreferences();
+  const monthlyBudget = preferences?.monthlyBudget || 0;
+
+  /* 🔢 GET CURRENT MONTH TOTAL (BEFORE ADD) */
+  const expensesBefore = await getUserExpenses();
+  const monthTotalBefore = getCurrentMonthTotal(expensesBefore);
+
+  const newMonthTotal = monthTotalBefore + numericAmount;
+
+  /* 🚫 HARD BLOCK IF BUDGET EXCEEDED */
+  if (monthlyBudget > 0 && newMonthTotal > monthlyBudget) {
+    throw new Error(
+      "Monthly budget exceeded. Please update your budget in Preferences."
+    );
+  }
+
+  /* ✅ SAVE EXPENSE */
+  await addDoc(collection(db, "expenses"), {
+    title,
+    amount: numericAmount,
+    category,
+    date,
+    userId: user.uid,
+    createdAt: Timestamp.now(),
+  });
+
+  /* 🔔 RETURN RELIABLE VALUES */
+  return {
+    monthTotal: newMonthTotal,
+    monthlyBudget,
+  };
+};
+
+/* ============================
+   MONTHLY TOTAL (BY MONTH)
+============================ */
+
 export const getUserExpensesByMonth = async (month, year) => {
   const expenses = await getUserExpenses();
 
@@ -63,9 +96,10 @@ export const getUserExpensesByMonth = async (month, year) => {
     .reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
 };
 
-// --------------------
-// PREVIOUS MONTH HELPER
-// --------------------
+/* ============================
+   PREVIOUS MONTH HELPER
+============================ */
+
 export const getPrevMonthAndYear = (month, year) => {
   if (month === 1) {
     return { prevMonth: 12, prevYear: year - 1 };
@@ -73,60 +107,12 @@ export const getPrevMonthAndYear = (month, year) => {
   return { prevMonth: month - 1, prevYear: year };
 };
 
-// --------------------
-// COMPARE CURRENT VS PREVIOUS MONTH
-// --------------------
-export const compareCurrAndPrev = async (currentMonth, currentYear) => {
-  try {
-    const { prevMonth, prevYear } = getPrevMonthAndYear(
-      currentMonth,
-      currentYear
-    );
+/* ============================
+   DASHBOARD STATS
+============================ */
 
-    const prev = await getUserExpensesByMonth(prevMonth, prevYear);
-    const curr = await getUserExpensesByMonth(currentMonth, currentYear);
-
-    if (prev === 0) {
-      return {
-        percentageChange: null,
-        message: "No expenses in previous month",
-        current: curr,
-        previous: prev,
-      };
-    }
-
-    const change = ((curr - prev) / prev) * 100;
-
-    return {
-      percentageChange: Number(change.toFixed(2)),
-      message:
-        change > 0
-          ? "Spending increased"
-          : change < 0
-          ? "Spending decreased"
-          : "No change",
-      current: curr,
-      previous: prev,
-    };
-  } catch (error) {
-    console.error("Compare error:", error);
-    throw new Error("Failed to compare expenses");
-  }
-};
-
-// --------------------
-// DASHBOARD STATS
-// --------------------
 export const getDashboardStats = async () => {
   const expenses = await getUserExpenses();
-  if (!expenses.length) {
-    return {
-      totalAmount: 0,
-      monthTotal: 0,
-      todayTotal: 0,
-      totalOrders: 0,
-    };
-  }
 
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
@@ -152,9 +138,10 @@ export const getDashboardStats = async () => {
   };
 };
 
-// --------------------
-// RECENT EXPENSES (LAST 5)
-// --------------------
+/* ============================
+   RECENT EXPENSES
+============================ */
+
 export const getRecentExpenses = async () => {
   const expenses = await getUserExpenses();
 
@@ -167,9 +154,10 @@ export const getRecentExpenses = async () => {
     .slice(0, 5);
 };
 
-// --------------------
-// DELETE EXPENSE
-// --------------------
+/* ============================
+   DELETE EXPENSE
+============================ */
+
 export const deleteExpense = async (expenseId) => {
   const user = auth.currentUser;
   if (!user) return;
