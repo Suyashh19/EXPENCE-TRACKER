@@ -107,6 +107,44 @@ export const getPrevMonthAndYear = (month, year) => {
   return { prevMonth: month - 1, prevYear: year };
 };
 
+export const compareCurrAndPrev = async (currentMonth, currentYear) => {
+  try {
+    const { prevMonth, prevYear } = getPrevMonthAndYear(
+      currentMonth,
+      currentYear
+    );
+
+    const prev = await getUserExpensesByMonth(prevMonth, prevYear);
+    const curr = await getUserExpensesByMonth(currentMonth, currentYear);
+
+    if (prev === 0) {
+      return {
+        percentageChange: null,
+        message: "No expenses in previous month",
+        current: curr,
+        previous: prev,
+      };
+    }
+
+    const change = ((curr - prev) / prev) * 100;
+
+    return {
+      percentageChange: Number(change.toFixed(2)),
+      message:
+        change > 0
+          ? "Spending increased"
+          : change < 0
+          ? "Spending decreased"
+          : "No change",
+      current: curr,
+      previous: prev,
+    };
+  } catch (error) {
+    console.error("Compare error:", error);
+    throw new Error("Failed to compare expenses");
+  }
+};
+
 /* ============================
    DASHBOARD STATS
 ============================ */
