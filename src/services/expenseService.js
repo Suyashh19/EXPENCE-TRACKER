@@ -4,14 +4,16 @@ import {
   query,
   where,
   getDocs,
-  orderBy,
-  limit,
+  doc,
+  deleteDoc,
+  Timestamp,
 } from "firebase/firestore";
 import { auth } from "./firebase";
 import { db } from "./firebase";
-import { doc, deleteDoc } from "firebase/firestore";
 
+// --------------------
 // ADD EXPENSE
+// --------------------
 export const addExpense = async ({ title, amount, category, date }) => {
   const user = auth.currentUser;
   if (!user) return;
@@ -22,12 +24,14 @@ export const addExpense = async ({ title, amount, category, date }) => {
     category,
     date,
     userId: user.uid,
-    createdAt: new Date(),
+    createdAt: Timestamp.now(),
   });
 };
 
+// --------------------
 // GET ALL USER EXPENSES
-export const getUserExpenses = async () => { 
+// --------------------
+export const getUserExpenses = async () => {
   const user = auth.currentUser;
   if (!user) return [];
 
@@ -38,162 +42,137 @@ export const getUserExpenses = async () => {
 
   const snapshot = await getDocs(q);
 
-  return snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
+  return snapshot.docs.map((d) => ({
+    id: d.id,
+    ...d.data(),
   }));
 };
 
-export const getUserExpensesByMonth = async (monthNumber, yearNumber) => {
-  const user = auth.currentUser;
-  if (!user) return null;
+// --------------------
+// MONTHLY TOTAL
+// --------------------
+export const getUserExpensesByMonth = async (month, year) => {
+  const expenses = await getUserExpenses();
 
-  const q = query(
-    collection(db, "expenses"),
-    where("userId", "==", user.uid)
-  );
-  const snapshot = await getDocs(q);
-  const expenses = snapshot.docs.map((doc) => doc.data());
-  let monthTotal = expenses.filter((exp) => {
-    let dateOfExpense = exp.date.split('-')
-    let monthN = parseInt(dateOfExpense[1])
-    let yearN = parseInt(dateOfExpense[0])
-    return ((monthN == monthNumber) && (yearN == yearNumber))
-  }).reduce((sum, exp) => {
-    return sum = sum + exp.amount
-  }, 0)
-  return monthTotal
-}
+  return expenses
+    .filter((exp) => {
+      if (!exp.date) return false;
+      const [y, m] = exp.date.split("-").map(Number);
+      return y === year && m === month;
+    })
+    .reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
+};
 
-export const getPrevMonthAndYear  = (currentMonthNumber,currentYear) =>{
-  let prevMonth = 0
-  let prevYear = 0
-  if(currentMonthNumber == 1){
-    prevMonth = 12
-    prevYear = currentYear - 1
-    return {
-      prevMonth,
-      prevYear
-    };
+// --------------------
+// PREVIOUS MONTH HELPER
+// --------------------
+export const getPrevMonthAndYear = (month, year) => {
+  if (month === 1) {
+    return { prevMonth: 12, prevYear: year - 1 };
   }
-  prevMonth = currentMonthNumber-1
-  prevYear = currentYear
-  return {
-    prevMonth,
-    prevYear
-  }
-}
+  return { prevMonth: month - 1, prevYear: year };
+};
 
-export const compareCurrAndPrev = async (
-  currentMonthNumber,
-  currentYear
-) => {
+// --------------------
+// COMPARE CURRENT VS PREVIOUS MONTH
+// --------------------
+export const compareCurrAndPrev = async (currentMonth, currentYear) => {
   try {
     const { prevMonth, prevYear } = getPrevMonthAndYear(
-      currentMonthNumber,
+      currentMonth,
       currentYear
     );
 
-    const prevExpenses =
-      (await getUserExpensesByMonth(prevMonth, prevYear)) ?? 0;
+    const prev = await getUserExpensesByMonth(prevMonth, prevYear);
+    const curr = await getUserExpensesByMonth(currentMonth, currentYear);
 
-    const currExpenses =
-      (await getUserExpensesByMonth(currentMonthNumber, currentYear)) ?? 0;
-
-    // No spending in previous month
-    if (prevExpenses === 0) {
+    if (prev === 0) {
       return {
         percentageChange: null,
         message: "No expenses in previous month",
-        current: currExpenses,
-        previous: prevExpenses,
+        current: curr,
+        previous: prev,
       };
     }
 
-    const percentageChange =
-      ((currExpenses - prevExpenses) / prevExpenses) * 100;
+    const change = ((curr - prev) / prev) * 100;
 
     return {
-      percentageChange: Number(percentageChange.toFixed(2)),
+      percentageChange: Number(change.toFixed(2)),
       message:
-        percentageChange > 0
+        change > 0
           ? "Spending increased"
-          : percentageChange < 0
+          : change < 0
           ? "Spending decreased"
-          : "No change in spending",
-      current: currExpenses,
-      previous: prevExpenses,
+          : "No change",
+      current: curr,
+      previous: prev,
     };
   } catch (error) {
-    console.error("Error comparing expenses:", error);
-    throw new Error("Failed to compare monthly expenses");
+    console.error("Compare error:", error);
+    throw new Error("Failed to compare expenses");
   }
 };
 
-
+// --------------------
 // DASHBOARD STATS
+// --------------------
 export const getDashboardStats = async () => {
-  const user = auth.currentUser;
-  if (!user) return null;
+  const expenses = await getUserExpenses();
+  if (!expenses.length) {
+    return {
+      totalAmount: 0,
+      monthTotal: 0,
+      todayTotal: 0,
+      totalOrders: 0,
+    };
+  }
 
-  const q = query(
-    collection(db, "expenses"),
-    where("userId", "==", user.uid)
+  const today = new Date();
+  const todayStr = today.toISOString().split("T")[0];
+
+  const totalAmount = expenses.reduce(
+    (sum, exp) => sum + Number(exp.amount || 0),
+    0
   );
 
-  const snapshot = await getDocs(q);
-  const expenses = snapshot.docs.map((doc) => doc.data());
+  const monthTotal = expenses
+    .filter((exp) => exp.date?.startsWith(todayStr.slice(0, 7)))
+    .reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
 
-  const today1 = new Date()
-  const today = today1.toISOString().split("T")[0];
-  let totalAmount = expenses.reduce((sum, exp) => {
-    return sum = sum + exp.amount
-  }, 0)
-  let monthTotal = await getUserExpensesByMonth(today1.getMonth() + 1, today1.getFullYear())
-  let todayTotal = expenses.filter((exp)=>{
-    return (exp.date === today)
-  }).reduce((sum,exp)=>{
-    return sum=sum+exp.amount
-  },0)
+  const todayTotal = expenses
+    .filter((exp) => exp.date === todayStr)
+    .reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
 
   return {
-    monthTotal,
     totalAmount,
-    totalOrders: expenses.length,
+    monthTotal,
     todayTotal,
+    totalOrders: expenses.length,
   };
 };
 
-// RECENT ACTIVITY (LAST 5 EXPENSES)
-// RECENT ACTIVITY (LAST 5 EXPENSES - GUARANTEED)
+// --------------------
+// RECENT EXPENSES (LAST 5)
+// --------------------
 export const getRecentExpenses = async () => {
-  const user = auth.currentUser;
-  if (!user) return [];
+  const expenses = await getUserExpenses();
 
-  const q = query(
-    collection(db, "expenses"),
-    where("userId", "==", user.uid)
-  );
-
-  const snapshot = await getDocs(q);
-
-  return snapshot.docs
-    .map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }))
-    .sort((a, b) => {
-      if (!a.createdAt || !b.createdAt) return 0;
-      return b.createdAt.seconds - a.createdAt.seconds;
-    })
+  return expenses
+    .filter((e) => e.createdAt)
+    .sort(
+      (a, b) =>
+        (b.createdAt.seconds || 0) - (a.createdAt.seconds || 0)
+    )
     .slice(0, 5);
 };
 
-// DELETE SINGLE EXPENSE
+// --------------------
+// DELETE EXPENSE
+// --------------------
 export const deleteExpense = async (expenseId) => {
   const user = auth.currentUser;
   if (!user) return;
 
-  const expenseRef = doc(db, "expenses", expenseId);
-  await deleteDoc(expenseRef);
+  await deleteDoc(doc(db, "expenses", expenseId));
 };
