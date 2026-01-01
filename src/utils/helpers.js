@@ -29,7 +29,6 @@ export const getCurrentMonthRange = () => {
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth(), 1);
   const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
   return { start, end };
 };
 
@@ -71,12 +70,21 @@ export const getBudgetUsagePercent = (spent, budget) => {
   return Math.round((spent / budget) * 100);
 };
 
-/* ============================
-   🔥 NEW (DO NOT REMOVE)
-   MONTHLY BUDGET WARNING
-============================ */
-
 export const shouldWarnMonthlyBudget = (spent, budget) => {
   if (!budget || budget <= 0) return false;
   return spent / budget >= 0.8;
+};
+
+/* ============================
+   🔔 DAILY REMINDER (NEW)
+============================ */
+
+export const hasShownDailyReminderToday = () => {
+  const today = getTodayDateString();
+  return localStorage.getItem("dailyReminderShown") === today;
+};
+
+export const markDailyReminderShown = () => {
+  const today = getTodayDateString();
+  localStorage.setItem("dailyReminderShown", today);
 };

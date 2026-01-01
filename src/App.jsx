@@ -1,20 +1,23 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+
 import Login from "./auth/Login";
 import Register from "./auth/Register";
+import AuthGuard from "./auth/AuthGuard";
+
 import Dashboard from "./pages/Dashboard";
 import AddExpense from "./pages/AddExpense";
 import Expenses from "./pages/Expenses";
 import Analytics from "./pages/Analytics";
+import Advice from "./pages/Advice";
+import Settings from "./pages/settings/Settings";
+
 import Sidebar from "./components/Sidebar";
 import Landing from "./pages/Landing";
 import PublicLayout from "./layouts/PublicLayout";
-import Advice from "./pages/Advice";
+
 import { getUserExpenses } from "./services/expenseService";
-import Settings from "./pages/settings/Settings";
-import Preferences from "./pages/settings/Preferences";
 
-
-// Glass layout for authenticated pages
+// 🔹 Glass layout for authenticated pages
 const GlassLayout = ({ children }) => {
   return (
     <div className="relative flex h-screen w-full gap-8 p-8 antialiased overflow-hidden">
@@ -66,35 +69,73 @@ export default function App() {
           }
         />
 
-        {/* ✅ AUTHENTICATED ROUTES */}
+        {/* 🔐 AUTHENTICATED ROUTES */}
         <Route
           path="/dashboard"
-          element={<GlassLayout><Dashboard /></GlassLayout>}
+          element={
+            <AuthGuard>
+              <GlassLayout>
+                <Dashboard />
+              </GlassLayout>
+            </AuthGuard>
+          }
         />
 
         <Route
           path="/add"
-          element={<GlassLayout><AddExpense /></GlassLayout>}
+          element={
+            <AuthGuard>
+              <GlassLayout>
+                <AddExpense />
+              </GlassLayout>
+            </AuthGuard>
+          }
         />
 
         <Route
           path="/expenses"
-          element={<GlassLayout><Expenses /></GlassLayout>}
+          element={
+            <AuthGuard>
+              <GlassLayout>
+                <Expenses />
+              </GlassLayout>
+            </AuthGuard>
+          }
         />
 
         <Route
           path="/analytics"
-          element={<GlassLayout><Analytics /></GlassLayout>}
+          element={
+            <AuthGuard>
+              <GlassLayout>
+                <Analytics />
+              </GlassLayout>
+            </AuthGuard>
+          }
         />
 
         <Route
           path="/advice"
-          element={<GlassLayout><Advice promiseExpenseSummary={getUserExpenses()} /></GlassLayout>}
+          element={
+            <AuthGuard>
+              <GlassLayout>
+                <Advice promiseExpenseSummary={getUserExpenses()} />
+              </GlassLayout>
+            </AuthGuard>
+          }
         />
+
         <Route
           path="/settings"
-          element={<GlassLayout><Settings /></GlassLayout>}
+          element={
+            <AuthGuard>
+              <GlassLayout>
+                <Settings />
+              </GlassLayout>
+            </AuthGuard>
+          }
         />
+
       </Routes>
     </BrowserRouter>
   );

@@ -19,8 +19,14 @@ import {
   getTodayTotal,
   getCurrentMonthTotal,
   getBudgetUsagePercent,
+  hasShownDailyReminderToday,
+  markDailyReminderShown,
 } from "../utils/helpers";
 import { normalizePaymentMethod } from "../utils/payment";
+
+/* 🔔 TOAST */
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function Dashboard() {
   const [statsData, setStatsData] = useState(null);
@@ -30,7 +36,6 @@ export default function Dashboard() {
   const [chartData, setChartData] = useState([
     ["Month", "Expenses", { role: "style" }],
   ]);
-  const [dailyAlertShown, setDailyAlertShown] = useState(false);
   const [expenses, setExpenses] = useState([]);
 
   const today = new Date();
@@ -47,7 +52,7 @@ export default function Dashboard() {
     "#facc15",
   ];
 
-  /* ============================ 📊 LOAD EXPENSES + CHART ============================ */
+  /* ============================ LOAD EXPENSES + CHART ============================ */
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) return;
@@ -78,7 +83,7 @@ export default function Dashboard() {
     return () => unsubscribe();
   }, [currentYear]);
 
-  /* ============================ 📈 STATS + RECENT ============================ */
+  /* ============================ STATS + RECENT ============================ */
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) return;
@@ -93,41 +98,53 @@ export default function Dashboard() {
     return () => unsubscribe();
   }, []);
 
-  /* ============================ 🔔 NOTIFICATIONS ============================ */
+  /* ============================ 🔔 NOTIFICATIONS (FIXED + UI) ============================ */
   useEffect(() => {
     if (!statsData || expenses.length === 0) return;
 
-    const run = async () => {
+    const runNotifications = async () => {
       const preferences = await getUserPreferences();
       const notifications = await getUserNotifications();
       if (!preferences || !notifications) return;
 
-      // Daily reminder
+      const hour = new Date().getHours();
+
+      /* 🔔 DAILY REMINDER — ONLY ONCE PER DAY AFTER 8 PM */
       if (
         notifications.dailyExpenseReminder &&
-        new Date().getHours() >= 20 &&
-        !dailyAlertShown
+        hour >= 20 &&
+        !hasShownDailyReminderToday()
       ) {
-        alert(`You spent ₹${getTodayTotal(expenses)} today`);
-        setDailyAlertShown(true);
+        toast.info(
+          `🧾 Today you spent ₹${getTodayTotal(expenses)}`,
+          { autoClose: 6000 }
+        );
+        markDailyReminderShown();
       }
 
-      // Monthly budget alert
-      if (notifications.monthlyBudgetAlert && preferences.monthlyBudget > 0) {
+      /* 🔔 MONTHLY BUDGET WARNING */
+      if (
+        notifications.monthlyBudgetAlert &&
+        preferences.monthlyBudget > 0
+      ) {
         const percent = getBudgetUsagePercent(
           getCurrentMonthTotal(expenses),
           preferences.monthlyBudget
         );
+
         if (percent >= 80) {
-          alert(`⚠️ You have used ${percent}% of your monthly budget`);
+          toast.warning(
+            `⚠️ You have used ${percent}% of your monthly budget`,
+            { autoClose: 7000 }
+          );
         }
       }
     };
 
-    run();
-  }, [statsData, expenses, dailyAlertShown]);
+    runNotifications();
+  }, [statsData, expenses]);
 
-  /* ============================ 💡 CASH vs DIGITAL INSIGHT ============================ */
+  /* ============================ PAYMENT INSIGHT ============================ */
   const paymentInsight = useMemo(() => {
     let cash = 0;
     let digital = 0;
@@ -179,7 +196,7 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* 💡 QUICK INSIGHT */}
+      {/* QUICK INSIGHT */}
       <div className="rounded-3xl md:rounded-[3.5rem] thin-glass p-6 md:p-8">
         <p className="text-sm font-black text-slate-700 mb-2">
           💡 Spending Insight
@@ -200,23 +217,6 @@ export default function Dashboard() {
       {/* CHART + RECENT */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 mb-10">
         <div className="lg:col-span-2 rounded-3xl md:rounded-[4rem] thin-glass p-6 md:p-12">
-          <div className="flex flex-col sm:flex-row justify-between gap-4 mb-4">
-            <h3 className="text-xl md:text-2xl font-black">
-              Sales Analysis
-            </h3>
-
-            <select
-              value={chartType}
-              onChange={(e) => setChartType(e.target.value)}
-              className="rounded-xl border px-4 py-2 text-sm"
-            >
-              <option value="ColumnChart">Column</option>
-              <option value="LineChart">Line</option>
-              <option value="AreaChart">Area</option>
-              <option value="PieChart">Pie</option>
-            </select>
-          </div>
-
           <Chart
             chartType={chartType}
             width="100%"
@@ -255,12 +255,14 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* 🔔 TOAST UI */}
+      <ToastContainer position="top-right" />
     </div>
   );
 }
 
 /* ============================ STAT CARD ============================ */
-
 const StatCard = ({ label, value }) => (
   <div className="rounded-3xl md:rounded-[3.5rem] thin-glass p-6 md:p-10">
     <p className="text-xs font-black uppercase tracking-widest text-slate-400">
