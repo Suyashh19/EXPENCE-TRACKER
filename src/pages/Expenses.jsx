@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
 
 import Navbar from "../components/Navbar";
 import { getUserExpenses, deleteExpense } from "../services/expenseService";
+import { normalizePaymentMethod } from "../utils/payment";
 
 const Expenses = () => {
   const navigate = useNavigate();
@@ -17,7 +17,7 @@ const Expenses = () => {
   const fetchExpenses = async () => {
     setLoading(true);
     const data = await getUserExpenses();
-    setExpenseList(data);
+    setExpenseList(data || []);
     setLoading(false);
   };
 
@@ -36,8 +36,10 @@ const Expenses = () => {
       const matchesSearch = exp.title
         ?.toLowerCase()
         .includes(searchText.toLowerCase());
+
       const matchesCategory =
         selectedCategory === "All" || exp.category === selectedCategory;
+
       return matchesSearch && matchesCategory;
     })
     .sort((a, b) =>
@@ -67,6 +69,17 @@ const Expenses = () => {
     return styles[cat] || "bg-slate-500/20 text-slate-600 border-slate-500/30";
   };
 
+  const getPaymentStyle = (method) => {
+    const styles = {
+      Cash: "bg-slate-200 text-slate-700",
+      UPI: "bg-blue-100 text-blue-700",
+      Card: "bg-purple-100 text-purple-700",
+      Online: "bg-indigo-100 text-indigo-700",
+      Other: "bg-gray-100 text-gray-600",
+    };
+    return styles[method] || styles.Other;
+  };
+
   return (
     <div className="flex flex-col gap-6 md:gap-8">
       <Navbar />
@@ -83,14 +96,12 @@ const Expenses = () => {
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              onClick={() => navigate("/add")}
-              className="rounded-xl bg-emerald-500 px-5 py-2 text-sm font-semibold text-white"
-            >
-              Add Expense
-            </button>
-          </div>
+          <button
+            onClick={() => navigate("/add")}
+            className="rounded-xl bg-emerald-500 px-5 py-2 text-sm font-semibold text-white"
+          >
+            Add Expense
+          </button>
         </div>
 
         {/* FILTERS */}
@@ -126,43 +137,57 @@ const Expenses = () => {
 
         {/* SUMMARY */}
         <div className="mb-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          <Summary label="Total" value={`$${totalAmount.toFixed(2)}`} />
-          <Summary label="Average" value={`$${averageAmount}`} />
+          <Summary label="Total" value={`₹${totalAmount.toFixed(2)}`} />
+          <Summary label="Average" value={`₹${averageAmount}`} />
           <Summary label="Transactions" value={transactionCount} />
         </div>
 
         {/* MOBILE CARDS */}
         <div className="md:hidden space-y-4">
-          {filteredExpenses.map((exp) => (
-            <div
-              key={exp.id}
-              className="rounded-2xl border border-white/40 p-4 bg-white/10"
-            >
-              <div className="flex justify-between mb-2">
-                <p className="font-black">{exp.title}</p>
-                <p className="font-black text-emerald-600">
-                  -${Number(exp.amount).toFixed(2)}
-                </p>
-              </div>
+          {filteredExpenses.map((exp) => {
+            const payment = normalizePaymentMethod(exp.paymentMethod);
 
-              <div className="flex justify-between items-center text-xs">
-                <span
-                  className={`px-3 py-1 rounded-full border font-black uppercase ${getCategoryStyle(
-                    exp.category
-                  )}`}
-                >
-                  {exp.category}
-                </span>
+            return (
+              <div
+                key={exp.id}
+                className="rounded-2xl border border-white/40 p-4 bg-white/10"
+              >
+                <div className="flex justify-between mb-2">
+                  <p className="font-black">{exp.title}</p>
+                  <p className="font-black text-emerald-600">
+                    -₹{Number(exp.amount).toFixed(2)}
+                  </p>
+                </div>
 
-                <button
-                  onClick={() => handleDelete(exp.id)}
-                  className="text-rose-500 font-bold"
-                >
-                  Delete
-                </button>
+                <div className="flex justify-between items-center text-xs">
+                  <div className="flex gap-2">
+                    <span
+                      className={`px-3 py-1 rounded-full border font-black uppercase ${getCategoryStyle(
+                        exp.category
+                      )}`}
+                    >
+                      {exp.category}
+                    </span>
+
+                    <span
+                      className={`px-3 py-1 rounded-full font-black ${getPaymentStyle(
+                        payment
+                      )}`}
+                    >
+                      {payment}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => handleDelete(exp.id)}
+                    className="text-rose-500 font-bold"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* DESKTOP TABLE */}
@@ -179,6 +204,9 @@ const Expenses = () => {
                 <th className="pb-4 text-xs font-black uppercase text-slate-400">
                   Category
                 </th>
+                <th className="pb-4 text-xs font-black uppercase text-slate-400">
+                  Payment
+                </th>
                 <th className="pb-4 pr-4 text-right text-xs font-black uppercase text-slate-400">
                   Amount
                 </th>
@@ -189,34 +217,47 @@ const Expenses = () => {
             </thead>
 
             <tbody className="divide-y divide-white/20">
-              {filteredExpenses.map((exp) => (
-                <tr key={exp.id} className="hover:bg-white/20">
-                  <td className="py-5 pl-4 text-sm text-slate-500">
-                    {exp.createdAt?.toDate().toLocaleDateString()}
-                  </td>
-                  <td className="py-5 font-semibold">{exp.title}</td>
-                  <td className="py-5">
-                    <span
-                      className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase border ${getCategoryStyle(
-                        exp.category
-                      )}`}
-                    >
-                      {exp.category}
-                    </span>
-                  </td>
-                  <td className="py-5 pr-4 text-right font-semibold">
-                    -${Number(exp.amount).toFixed(2)}
-                  </td>
-                  <td className="py-5 pr-4 text-right">
-                    <button
-                      onClick={() => handleDelete(exp.id)}
-                      className="text-rose-500 text-xs font-bold hover:underline"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {filteredExpenses.map((exp) => {
+                const payment = normalizePaymentMethod(exp.paymentMethod);
+
+                return (
+                  <tr key={exp.id} className="hover:bg-white/20">
+                    <td className="py-5 pl-4 text-sm text-slate-500">
+                      {exp.createdAt?.toDate().toLocaleDateString()}
+                    </td>
+                    <td className="py-5 font-semibold">{exp.title}</td>
+                    <td className="py-5">
+                      <span
+                        className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase border ${getCategoryStyle(
+                          exp.category
+                        )}`}
+                      >
+                        {exp.category}
+                      </span>
+                    </td>
+                    <td className="py-5">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-black ${getPaymentStyle(
+                          payment
+                        )}`}
+                      >
+                        {payment}
+                      </span>
+                    </td>
+                    <td className="py-5 pr-4 text-right font-semibold">
+                      -₹{Number(exp.amount).toFixed(2)}
+                    </td>
+                    <td className="py-5 pr-4 text-right">
+                      <button
+                        onClick={() => handleDelete(exp.id)}
+                        className="text-rose-500 text-xs font-bold hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

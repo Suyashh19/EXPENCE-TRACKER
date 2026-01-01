@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Navbar from "../components/Navbar";
 import { getUserExpenses } from "../services/expenseService";
+import { normalizePaymentMethod } from "../utils/payment";
+
 import {
   ResponsiveContainer,
   LineChart,
@@ -46,16 +48,6 @@ const getExpenseDate = (e) => {
       .split("T")[0];
   }
   return null;
-};
-
-const normalizePaymentMethod = (method) => {
-  if (!method) return "Other";
-  const m = method.toLowerCase();
-  if (m.includes("cash")) return "Cash";
-  if (m.includes("card")) return "Card";
-  if (m.includes("upi")) return "UPI";
-  if (m.includes("online")) return "Online";
-  return "Other";
 };
 
 const aggregateTrend = (expenses, mode) => {
@@ -105,29 +97,25 @@ const aggregatePaymentMethods = (expenses) => {
 
 /* ===================== ACTIVE PIE ===================== */
 
-const ActivePieSlice = (props) => {
-  const {
-    cx,
-    cy,
-    innerRadius,
-    outerRadius,
-    startAngle,
-    endAngle,
-    fill,
-  } = props;
-
-  return (
-    <Sector
-      cx={cx}
-      cy={cy}
-      innerRadius={innerRadius}
-      outerRadius={outerRadius + 10}
-      startAngle={startAngle}
-      endAngle={endAngle}
-      fill={fill}
-    />
-  );
-};
+const ActivePieSlice = ({
+  cx,
+  cy,
+  innerRadius,
+  outerRadius,
+  startAngle,
+  endAngle,
+  fill,
+}) => (
+  <Sector
+    cx={cx}
+    cy={cy}
+    innerRadius={innerRadius}
+    outerRadius={outerRadius + 10}
+    startAngle={startAngle}
+    endAngle={endAngle}
+    fill={fill}
+  />
+);
 
 /* ===================== COMPONENT ===================== */
 
@@ -203,9 +191,9 @@ export default function Analytics() {
 
         {/* STATS */}
         <div className="grid grid-cols-3 gap-6 mb-10">
-          <Stat label="Total Spent" value={`$${totalSpent.toFixed(2)}`} />
-          <Stat label="Daily Avg" value={`$${avgDaily}`} />
-          <Stat label="Highest Expense" value={`$${highestExpense}`} />
+          <Stat label="Total Spent" value={`₹${totalSpent.toFixed(2)}`} />
+          <Stat label="Daily Avg" value={`₹${avgDaily}`} />
+          <Stat label="Highest Expense" value={`₹${highestExpense}`} />
         </div>
 
         {/* TREND */}
@@ -272,7 +260,10 @@ export default function Analytics() {
                   <Tooltip />
                   <Bar dataKey="value" radius={[8, 8, 8, 8]}>
                     {paymentData.map((e, i) => (
-                      <Cell key={i} fill={PASTEL_COLORS[e.name] || "#E5E7EB"} />
+                      <Cell
+                        key={i}
+                        fill={PASTEL_COLORS[e.name] || "#E5E7EB"}
+                      />
                     ))}
                   </Bar>
                 </BarChart>
