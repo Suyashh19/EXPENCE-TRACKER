@@ -10,48 +10,12 @@ export default function AddExpense() {
     title: "",
     amount: "",
     category: "Food",
-    paymentMethod: "UPI", // ✅ BETTER DEFAULT
+    paymentMethod: "UPI",
     date: new Date().toISOString().split("T")[0],
   });
 
   const [aiInput, setAiInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
-
-  /* =========================
-     AI PARSE HANDLER
-  ========================= */
-  const handleAIParse = async () => {
-    if (!aiInput.trim()) {
-      toast.warning("Please enter an expense message");
-      return;
-    }
-
-    try {
-      setAiLoading(true);
-
-      const parsed = await parseExpenseMessage(aiInput);
-
-      setFormData((prev) => ({
-        ...prev,
-        title: parsed.title ?? prev.title,
-        amount: parsed.amount ?? prev.amount,
-        category: parsed.category ?? prev.category,
-        paymentMethod: parsed.paymentMethod ?? prev.paymentMethod,
-        date: parsed.date ?? prev.date,
-      }));
-
-      toast.success("Expense parsed successfully ✨", {
-        className: "glass-success-toast",
-      });
-    } catch (error) {
-      console.error("AI Parse Error:", error);
-      toast.error("Could not parse expense. Try again.", {
-        className: "glass-error-toast",
-      });
-    } finally {
-      setAiLoading(false);
-    }
-  };
 
   const categories = [
     "Food",
@@ -66,34 +30,48 @@ export default function AddExpense() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((p) => ({ ...p, [name]: value }));
   };
 
-  /* =========================
-     SUBMIT HANDLER
-  ========================= */
+  const handleAIParse = async () => {
+    if (!aiInput.trim()) {
+      toast.warning("Please enter an expense message");
+      return;
+    }
+
+    try {
+      setAiLoading(true);
+      const parsed = await parseExpenseMessage(aiInput);
+
+      setFormData((p) => ({
+        ...p,
+        title: parsed.title ?? p.title,
+        amount: parsed.amount ?? p.amount,
+        category: parsed.category ?? p.category,
+        paymentMethod: parsed.paymentMethod ?? p.paymentMethod,
+        date: parsed.date ?? p.date,
+      }));
+
+      toast.success("Expense parsed successfully ✨");
+    } catch {
+      toast.error("Could not parse expense");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
       const result = await addExpense({
-        title: formData.title,
+        ...formData,
         amount: Number(formData.amount),
-        category: formData.category,
-        paymentMethod: formData.paymentMethod, // ✅ SAVED CORRECTLY
-        date: formData.date,
       });
 
-      toast.success("Expense saved successfully 💸", {
-        className: "glass-success-toast",
-      });
+      toast.success("Expense saved successfully 💸");
 
-      /* 🔔 MONTHLY BUDGET ALERT */
       const notifications = await getUserNotifications();
-
       if (
         notifications?.monthlyBudgetAlert &&
         result?.monthlyBudget &&
@@ -102,11 +80,7 @@ export default function AddExpense() {
         const percent = Math.round(
           (result.monthTotal / result.monthlyBudget) * 100
         );
-
-        toast.warning(
-          `⚠️ You have used ${percent}% of your monthly budget`,
-          { autoClose: 6000 }
-        );
+        toast.warning(`⚠️ You used ${percent}% of your budget`);
       }
 
       setFormData({
@@ -117,108 +91,71 @@ export default function AddExpense() {
         date: new Date().toISOString().split("T")[0],
       });
       setAiInput("");
-    } catch (error) {
-      console.error(error);
-
-      if (
-        error?.message &&
-        error.message.includes("Monthly budget exceeded")
-      ) {
-        toast.error(
-          "🚫 Monthly budget exceeded. Please update your budget in Preferences.",
-          { autoClose: 6000 }
-        );
-      } else {
-        toast.error("Failed to save expense", {
-          className: "glass-error-toast",
-        });
-      }
+    } catch {
+      toast.error("Failed to save expense");
     }
   };
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6 md:gap-8">
       <Navbar />
 
-      <div className="flex justify-center items-center py-10">
-        <div className="w-full max-w-2xl rounded-[3.5rem] thin-glass p-12 shadow-2xl">
-          <div className="mb-10 text-center">
-            <h2 className="text-3xl font-black text-slate-900">
+      <div className="flex justify-center px-4 md:px-0 py-6 md:py-10">
+        <div className="
+          w-full max-w-2xl
+          rounded-3xl md:rounded-[3.5rem]
+          thin-glass
+          p-6 md:p-12
+          shadow-2xl
+        ">
+          {/* HEADER */}
+          <div className="mb-8 text-center">
+            <h2 className="text-2xl md:text-3xl font-black text-slate-900">
               Add New Expense
             </h2>
-            <p className="text-slate-400 font-bold mt-2">
+            <p className="text-sm md:text-base text-slate-400 font-bold mt-2">
               Track your spending with precision
             </p>
           </div>
 
           {/* AI INPUT */}
-          <div className="mb-10 space-y-4">
-            <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-4">
+          <div className="mb-8 space-y-4">
+            <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">
               Add Expense using AI
             </label>
 
             <textarea
               value={aiInput}
               onChange={(e) => setAiInput(e.target.value)}
-              placeholder="e.g. Paid 350 via UPI for food yesterday"
-              className="w-full rounded-2xl border border-white/80 bg-white/20 px-6 py-4 outline-none"
+              placeholder="e.g. Paid 350 via UPI for food"
+              className="w-full rounded-2xl border bg-white/20 px-4 py-3 text-sm outline-none"
             />
 
             <button
               type="button"
               onClick={handleAIParse}
               disabled={aiLoading}
-              className="rounded-xl bg-purple-600 px-6 py-3 text-white font-black hover:scale-105 transition"
+              className="w-full sm:w-auto rounded-xl bg-purple-600 px-6 py-3 text-white font-black"
             >
               {aiLoading ? "Parsing..." : "Parse with AI"}
             </button>
           </div>
 
-          <form className="space-y-8" onSubmit={handleSubmit}>
-            <Input
-              label="Expense Title"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              placeholder="e.g., Starbucks Coffee"
-            />
+          {/* FORM */}
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <Input label="Expense Title" name="title" value={formData.title} onChange={handleChange} />
 
-            <div className="grid grid-cols-2 gap-6">
-              <Input
-                label="Amount"
-                type="number"
-                name="amount"
-                value={formData.amount}
-                onChange={handleChange}
-              />
-              <Input
-                label="Date"
-                type="date"
-                name="date"
-                value={formData.date}
-                onChange={handleChange}
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input label="Amount" type="number" name="amount" value={formData.amount} onChange={handleChange} />
+              <Input label="Date" type="date" name="date" value={formData.date} onChange={handleChange} />
             </div>
 
-            <Select
-              label="Category"
-              name="category"
-              value={formData.category}
-              options={categories}
-              onChange={handleChange}
-            />
-
-            <Select
-              label="Payment Method"
-              name="paymentMethod"
-              value={formData.paymentMethod}
-              options={paymentMethods}
-              onChange={handleChange}
-            />
+            <Select label="Category" name="category" value={formData.category} options={categories} onChange={handleChange} />
+            <Select label="Payment Method" name="paymentMethod" value={formData.paymentMethod} options={paymentMethods} onChange={handleChange} />
 
             <button
               type="submit"
-              className="w-full rounded-3xl bg-blue-600 py-5 text-lg font-black text-white hover:scale-[1.02] transition"
+              className="w-full rounded-2xl md:rounded-3xl bg-blue-600 py-4 text-base md:text-lg font-black text-white"
             >
               Save Transaction
             </button>
@@ -231,35 +168,31 @@ export default function AddExpense() {
   );
 }
 
-/* =========================
-   SMALL REUSABLE COMPONENTS
-========================= */
+/* ================= SMALL COMPONENTS ================= */
 
 const Input = ({ label, ...props }) => (
-  <div className="space-y-3">
-    <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-4">
+  <div className="space-y-2">
+    <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">
       {label}
     </label>
     <input
       {...props}
-      className="w-full rounded-2xl border border-white/80 bg-white/20 px-6 py-4 outline-none"
+      className="w-full rounded-2xl border bg-white/20 px-4 py-3 text-sm outline-none"
     />
   </div>
 );
 
 const Select = ({ label, options, ...props }) => (
-  <div className="space-y-3">
-    <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-4">
+  <div className="space-y-2">
+    <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">
       {label}
     </label>
     <select
       {...props}
-      className="w-full rounded-2xl border border-white/80 bg-white/20 px-6 py-4 outline-none"
+      className="w-full rounded-2xl border bg-white/20 px-4 py-3 text-sm outline-none"
     >
       {options.map((o) => (
-        <option key={o} value={o}>
-          {o}
-        </option>
+        <option key={o} value={o}>{o}</option>
       ))}
     </select>
   </div>

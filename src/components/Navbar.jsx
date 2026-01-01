@@ -15,7 +15,6 @@ const Navbar = () => {
         setFirstName(name);
       }
     };
-
     loadProfile();
   }, []);
 
@@ -25,23 +24,46 @@ const Navbar = () => {
   };
 
   return (
-    <header className="flex h-24 items-center justify-between rounded-[2.5rem] thin-glass px-10">
-      {/* Left Section */}
-      <div>
-        <h1 className="text-xl font-black text-slate-900">
+    <header className="
+      flex flex-col sm:flex-row
+      items-start sm:items-center
+      justify-between
+      gap-4 sm:gap-0
+      rounded-3xl sm:rounded-[2.5rem]
+      thin-glass
+      px-5 sm:px-10
+      py-4 sm:py-0
+      h-auto sm:h-24
+    ">
+      {/* LEFT */}
+      <div className="flex flex-col">
+        <h1 className="text-lg sm:text-xl font-black text-slate-900">
           Hi, {firstName || "User"}
         </h1>
-        <p className="text-sm font-semibold text-slate-400">
+        <p className="text-xs sm:text-sm font-semibold text-slate-400">
           Welcome back to Finora ✨
         </p>
       </div>
 
-      {/* Right Section */}
-      <div className="flex items-center">
-        {/* Logout Button */}
+      {/* RIGHT */}
+      <div className="flex items-center w-full sm:w-auto">
         <button
           onClick={handleLogout}
-          className="rounded-2xl border border-rose-200 bg-rose-50 px-6 py-3 text-sm font-bold text-rose-600 transition-all hover:bg-rose-100 hover:text-rose-700 active:scale-95"
+          className="
+            w-full sm:w-auto
+            rounded-xl sm:rounded-2xl
+            border border-rose-200
+            bg-rose-50
+            px-4 sm:px-6
+            py-2.5 sm:py-3
+            text-xs sm:text-sm
+            font-bold
+            text-rose-600
+            transition-all
+            hover:bg-rose-100
+            hover:text-rose-700
+            active:scale-95
+          "
         >
           Logout
         </button>

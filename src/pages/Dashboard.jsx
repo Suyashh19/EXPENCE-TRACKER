@@ -26,12 +26,9 @@ export default function Dashboard() {
   const [recent, setRecent] = useState([]);
   const [monthComparison, setMonthComparison] = useState(null);
   const [chartType, setChartType] = useState("ColumnChart");
-
   const [chartData, setChartData] = useState([
     ["Month", "Expenses", { role: "style" }],
   ]);
-
-  /* 🔒 DAILY REMINDER → prevent spam */
   const [dailyAlertShown, setDailyAlertShown] = useState(false);
 
   const today = new Date();
@@ -39,220 +36,153 @@ export default function Dashboard() {
   const pieColors = [
     "#2563eb", "#22c55e", "#f97316", "#e11d48",
     "#a855f7", "#06b6d4", "#84cc16", "#facc15",
-    "#fb7185", "#38bdf8", "#c084fc", "#f472b6",
   ];
 
-  /* ============================
-     📊 CHART DATA
-  ============================ */
+  /* ============================ 📊 CHART DATA ============================ */
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) return;
-
       const expenses = await getUserExpenses();
 
-      const totalForMonth = (monthNum) =>
+      const totalForMonth = (m) =>
         expenses
-          .filter((exp) => {
-            if (!exp.date) return false;
-            const [year, month] = exp.date.split("-").map(Number);
-            return year === today.getFullYear() && month === monthNum;
-          })
-          .reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
+          .filter((e) => e.date && Number(e.date.split("-")[1]) === m)
+          .reduce((s, e) => s + Number(e.amount || 0), 0);
 
       setChartData([
         ["Month", "Expenses", { role: "style" }],
-        ["Jan", totalForMonth(1), "#434E78"],
-        ["Feb", totalForMonth(2), "#434E78"],
-        ["Mar", totalForMonth(3), "#434E78"],
-        ["Apr", totalForMonth(4), "#434E78"],
-        ["May", totalForMonth(5), "#434E78"],
-        ["Jun", totalForMonth(6), "#434E78"],
-        ["Jul", totalForMonth(7), "#434E78"],
-        ["Aug", totalForMonth(8), "#434E78"],
-        ["Sep", totalForMonth(9), "#434E78"],
-        ["Oct", totalForMonth(10), "#434E78"],
-        ["Nov", totalForMonth(11), "#434E78"],
-        ["Dec", totalForMonth(12), "#434E78"],
+        ...["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+          .map((m, i) => [m, totalForMonth(i + 1), "#434E78"]),
       ]);
     });
 
     return () => unsubscribe();
   }, []);
 
-  /* ============================
-     📈 STATS + RECENT
-  ============================ */
+  /* ============================ 📈 STATS ============================ */
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) return;
 
-      const stats = await getDashboardStats();
-      setStatsData(stats);
-
-      const comparison = await compareCurrAndPrev(
-        today.getMonth() + 1,
-        today.getFullYear()
+      setStatsData(await getDashboardStats());
+      setMonthComparison(
+        await compareCurrAndPrev(today.getMonth() + 1, today.getFullYear())
       );
-      setMonthComparison(comparison);
-
-      const recentData = await getRecentExpenses();
-      setRecent(recentData);
+      setRecent(await getRecentExpenses());
     });
 
     return () => unsubscribe();
   }, []);
 
-  /* ============================
-     🔔 NOTIFICATIONS (UPDATED)
-     ✅ Monthly alert repeats every time
-  ============================ */
+  /* ============================ 🔔 NOTIFICATIONS ============================ */
   useEffect(() => {
     if (!statsData) return;
 
-    const runNotifications = async () => {
+    const run = async () => {
       const expenses = await getUserExpenses();
       const preferences = await getUserPreferences();
       const notifications = await getUserNotifications();
 
       if (!preferences || !notifications) return;
 
-      /* 🔔 DAILY EXPENSE REMINDER (ONCE PER SESSION) */
-      const hour = new Date().getHours();
       if (
         notifications.dailyExpenseReminder &&
-        hour >= 20 &&
+        new Date().getHours() >= 20 &&
         !dailyAlertShown
       ) {
-        const todayTotal = getTodayTotal(expenses);
-        alert(`You spent ₹${todayTotal} today`);
+        alert(`You spent ₹${getTodayTotal(expenses)} today`);
         setDailyAlertShown(true);
       }
 
-      /* 🔔 MONTHLY BUDGET ALERT (EVERY TIME ≥ 80%) */
-      if (
-        notifications.monthlyBudgetAlert &&
-        preferences.monthlyBudget > 0
-      ) {
-        const monthTotal = getCurrentMonthTotal(expenses);
+      if (notifications.monthlyBudgetAlert && preferences.monthlyBudget > 0) {
         const percent = getBudgetUsagePercent(
-          monthTotal,
+          getCurrentMonthTotal(expenses),
           preferences.monthlyBudget
         );
-
-        if (percent >= 80) {
+        if (percent >= 80)
           alert(`⚠️ You have used ${percent}% of your monthly budget`);
-        }
       }
     };
 
-    runNotifications();
+    run();
   }, [statsData]);
-
-  /* ============================
-     📉 MONTH TREND
-  ============================ */
-  const renderMonthTrend = () => {
-    if (!monthComparison) return null;
-
-    if (monthComparison.percentageChange === null) {
-      return (
-        <p className="text-xs font-bold text-slate-400 mt-2">
-          No expenses last month
-        </p>
-      );
-    }
-
-    const isDecrease = monthComparison.percentageChange < 0;
-    const isIncrease = monthComparison.percentageChange > 0;
-
-    return (
-      <div
-        className={`mt-3 flex items-center gap-1 text-sm font-black ${
-          isDecrease ? "text-emerald-500" : "text-red-500"
-        }`}
-      >
-        <span>{isDecrease ? "↓" : isIncrease ? "↑" : "→"}</span>
-        <span>{Math.abs(monthComparison.percentageChange)}%</span>
-        <span className="text-xs font-bold opacity-80">
-          {isDecrease ? "less than last month" : "more than last month"}
-        </span>
-      </div>
-    );
-  };
 
   if (!statsData) return null;
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6 md:gap-8">
       <Navbar />
 
       {/* STATS */}
-      <div className="grid grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
         <StatCard label="Total Expense" value={`₹${statsData.totalAmount}`} />
 
-        <div className="rounded-[3.5rem] thin-glass p-10">
+        <div className="rounded-3xl md:rounded-[3.5rem] thin-glass p-6 md:p-10">
           <p className="text-xs font-black uppercase tracking-widest text-slate-400">
             This Month
           </p>
-          <h3 className="mt-4 text-4xl font-black text-slate-900">
+          <h3 className="mt-4 text-3xl md:text-4xl font-black text-slate-900">
             ₹{statsData.monthTotal}
           </h3>
-          {renderMonthTrend()}
-        </div>
-
-        <StatCard
-          label="Today's Expenses"
-          value={`₹${statsData.todayTotal}`}
-        />
-      </div>
-
-      {/* CHART + RECENT */}
-      <div className="grid grid-cols-3 gap-8 mb-10">
-        <div className="col-span-2 rounded-[4rem] thin-glass p-12">
-          <h3 className="text-2xl font-black mb-4">Sales Analysis</h3>
-
-          <select
-            value={chartType}
-            onChange={(e) => setChartType(e.target.value)}
-            className="mb-4 rounded border px-3 py-1"
-          >
-            <option value="ColumnChart">Column</option>
-            <option value="LineChart">Line</option>
-            <option value="AreaChart">Area</option>
-            <option value="PieChart">Pie</option>
-          </select>
-
-          {chartData.length > 1 && (
-            <Chart
-              chartType={chartType}
-              width="100%"
-              height="260px"
-              data={chartData}
-              options={{
-                backgroundColor: "transparent",
-                legend: {
-                  position: chartType === "PieChart" ? "right" : "none",
-                },
-                colors: chartType === "PieChart" ? pieColors : ["#434E78"],
-              }}
-            />
+          {monthComparison && (
+            <p className={`mt-3 text-sm font-black ${
+              monthComparison.percentageChange < 0
+                ? "text-emerald-500"
+                : "text-red-500"
+            }`}>
+              {monthComparison.percentageChange < 0 ? "↓" : "↑"}
+              {Math.abs(monthComparison.percentageChange)}%
+            </p>
           )}
         </div>
 
-        <div className="rounded-[4rem] thin-glass p-10">
-          <h3 className="text-xl font-black mb-8">Recent Activity</h3>
+        <StatCard label="Today's Expenses" value={`₹${statsData.todayTotal}`} />
+      </div>
 
-          <div className="space-y-6">
+      {/* CHART + RECENT */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 mb-10">
+        <div className="lg:col-span-2 rounded-3xl md:rounded-[4rem] thin-glass p-6 md:p-12">
+          <div className="flex flex-col sm:flex-row justify-between gap-4 mb-4">
+            <h3 className="text-xl md:text-2xl font-black">Sales Analysis</h3>
+
+            <select
+              value={chartType}
+              onChange={(e) => setChartType(e.target.value)}
+              className="rounded-xl border px-4 py-2 text-sm"
+            >
+              <option value="ColumnChart">Column</option>
+              <option value="LineChart">Line</option>
+              <option value="AreaChart">Area</option>
+              <option value="PieChart">Pie</option>
+            </select>
+          </div>
+
+          <Chart
+            chartType={chartType}
+            width="100%"
+            height="220px"
+            data={chartData}
+            options={{
+              backgroundColor: "transparent",
+              legend: { position: chartType === "PieChart" ? "right" : "none" },
+              colors: chartType === "PieChart" ? pieColors : ["#434E78"],
+            }}
+          />
+        </div>
+
+        <div className="rounded-3xl md:rounded-[4rem] thin-glass p-6 md:p-10">
+          <h3 className="text-lg md:text-xl font-black mb-6">
+            Recent Activity
+          </h3>
+
+          <div className="space-y-4">
             {recent.map((item) => (
               <div key={item.id} className="flex justify-between">
                 <div>
                   <p className="font-black">{item.title}</p>
                   <p className="text-xs text-slate-400">{item.category}</p>
                 </div>
-                <p className="font-black text-emerald-500">
-                  ₹{item.amount}
-                </p>
+                <p className="font-black text-emerald-500">₹{item.amount}</p>
               </div>
             ))}
           </div>
@@ -262,11 +192,15 @@ export default function Dashboard() {
   );
 }
 
+/* ============================ STAT CARD ============================ */
+
 const StatCard = ({ label, value }) => (
-  <div className="rounded-[3.5rem] thin-glass p-10">
+  <div className="rounded-3xl md:rounded-[3.5rem] thin-glass p-6 md:p-10">
     <p className="text-xs font-black uppercase tracking-widest text-slate-400">
       {label}
     </p>
-    <h3 className="mt-4 text-4xl font-black text-slate-900">{value}</h3>
+    <h3 className="mt-4 text-3xl md:text-4xl font-black text-slate-900">
+      {value}
+    </h3>
   </div>
 );
