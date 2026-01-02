@@ -41,6 +41,8 @@ import "react-toastify/dist/ReactToastify.css";
 
 export default function Dashboard() {
   const { preferredCurrency } = useAuth();
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [availableYears, setAvailableYears] = useState([]);
 
   const [statsData, setStatsData] = useState(null);
   const [dataReady, setDataReady] = useState(false);
@@ -70,7 +72,7 @@ export default function Dashboard() {
   ];
 
   /* ===================== BUILD CHART DATA (CURRENCY AWARE) ===================== */
-  const buildChartData = (allExpenses) => {
+  const buildChartData = (allExpenses, year) => {
     const months = [
       "Jan", "Feb", "Mar", "Apr", "May", "Jun",
       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
@@ -81,16 +83,12 @@ export default function Dashboard() {
         .filter((e) => {
           if (!e.date) return false;
           const [y, m] = e.date.split("-").map(Number);
-          return y === currentYear && m === month;
+          return y === year && m === month;
         })
         .reduce((sum, e) => sum + getAmountINR(e), 0);
 
     setChartData([
-      [
-        "Month",
-        `Expenses (${preferredCurrency})`,
-        { role: "style" },
-      ],
+      ["Month", `Expenses (${preferredCurrency})`, { role: "style" }],
       ...months.map((m, i) => [
         m,
         convertFromINR(totalForMonthINR(i + 1), preferredCurrency),
@@ -119,13 +117,28 @@ export default function Dashboard() {
       ]);
 
       setExpenses(allExpenses);
+      const years = Array.from(
+        new Set(
+          allExpenses
+            .map((e) => e.date?.split("-")[0])
+            .filter(Boolean)
+            .map(Number)
+        )
+      ).sort((a, b) => b - a);
+
+      setAvailableYears(years);
+
+      if (years.length) {
+        setSelectedYear(years[0]); // latest year
+      }
+
       setStatsData(stats);
       setRecent(recentTx);
       setMonthComparison(comparison);
       setPreferences(prefs);
       setDataReady(true);
 
-      buildChartData(allExpenses);
+      buildChartData(allExpenses, selectedYear);
     });
 
     return unsubscribe;
@@ -134,9 +147,9 @@ export default function Dashboard() {
   /* 🔁 REBUILD CHART WHEN CURRENCY CHANGES */
   useEffect(() => {
     if (expenses.length) {
-      buildChartData(expenses);
+      buildChartData(expenses, selectedYear);
     }
-  }, [preferredCurrency]);
+  }, [preferredCurrency, selectedYear]);
 
   /* ===================== AI INSIGHT ===================== */
   useEffect(() => {
@@ -233,11 +246,10 @@ Average of past three months: ${formatCurrency(statsData.averageMonth, preferred
 
           {monthComparison && (
             <p
-              className={`mt-3 text-sm font-black ${
-                monthComparison.percentageChange < 0
-                  ? "text-emerald-600"
-                  : "text-rose-500"
-              }`}
+              className={`mt-3 text-sm font-black ${monthComparison.percentageChange < 0
+                ? "text-emerald-600"
+                : "text-rose-500"
+                }`}
             >
               {monthComparison.percentageChange < 0 ? "▼" : "▲"}{" "}
               {Math.abs(monthComparison.percentageChange)}%
@@ -249,22 +261,39 @@ Average of past three months: ${formatCurrency(statsData.averageMonth, preferred
       {/* ===================== CHART + RECENT ===================== */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 mb-10">
         <div className="lg:col-span-2 rounded-3xl md:rounded-[4rem] thin-glass p-6 md:p-12">
-          <div className="flex justify-between mb-4">
+          <div className="flex flex-wrap gap-3 items-center justify-between mb-4">
             <h3 className="text-xl md:text-2xl font-black">
               Expenses Analysis
             </h3>
 
-            <select
-              value={chartType}
-              onChange={(e) => setChartType(e.target.value)}
-              className="rounded-xl border px-4 py-2 text-sm"
-            >
-              <option value="ColumnChart">Column</option>
-              <option value="LineChart">Line</option>
-              <option value="AreaChart">Area</option>
-              <option value="PieChart">Pie</option>
-            </select>
+            <div className="flex gap-2">
+              {/* YEAR SELECT */}
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="rounded-xl border px-3 py-2 text-sm font-semibold"
+              >
+                {availableYears.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+
+              {/* CHART TYPE */}
+              <select
+                value={chartType}
+                onChange={(e) => setChartType(e.target.value)}
+                className="rounded-xl border px-3 py-2 text-sm"
+              >
+                <option value="ColumnChart">Column</option>
+                <option value="LineChart">Line</option>
+                <option value="AreaChart">Area</option>
+                <option value="PieChart">Pie</option>
+              </select>
+            </div>
           </div>
+
 
           <Chart
             chartType={chartType}
