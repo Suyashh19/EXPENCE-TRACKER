@@ -20,6 +20,8 @@ const cleanJSONResponse = (text) =>
 // --------------------
 // BASE TEXT GENERATOR
 // --------------------
+
+
 export const generateText = async (prompt) => {
   try {
     const result = await model.generateContent(prompt);
@@ -29,6 +31,7 @@ export const generateText = async (prompt) => {
     throw new Error("Gemini generation failed");
   }
 };
+
 
 // --------------------
 // 1️⃣ PARSE EXPENSE MESSAGE
@@ -49,6 +52,8 @@ CURRENT DATE (IST): ${currentDate}
 Rules:
 - Choose "category" ONLY from:
   Food, Transport, Shopping, Bills, Entertainment, Others
+- Choose Payment Method from following methods:
+  UPI, Card, Cash, Online, Other
 - If category is unclear, use "Others"
 - Amount must be a number
 - Date must be in YYYY-MM-DD format
@@ -61,7 +66,9 @@ Schema:
   "title": string,
   "amount": number,
   "category": "Food | Transport | Shopping | Bills | Entertainment | Others",
-  "date": "YYYY-MM-DD"
+  "date": "YYYY-MM-DD",
+  "paymentMethod":string
+  ""
 }
 
 Message:
@@ -145,3 +152,47 @@ ${JSON.stringify(expenseAnalytics, null, 2)}
     throw new Error("Invalid dashboard JSON returned by Gemini");
   }
 };
+export const getAiInsight = async (context) => {
+  try {
+    const todayKey = `ai_insight_${new Date().toDateString()}`;
+    const cached = localStorage.getItem(todayKey);
+
+    if (cached) {
+      return cached; // ✅ NO API CALL
+    }
+
+       const prompt = `
+You are a personal finance assistant inside a money tracking app.
+
+This is the user's current financial context:
+${context}
+
+Your task:
+- Generate ONE short, helpful financial insight
+- Maximum 2 sentences
+- No emojis
+- Is markdown
+- No greetings
+- No questions
+- No generic advice
+
+Rules:
+- Base the insight strictly on the given data
+- If spending looks healthy, reinforce good behavior
+- If spending is risky, warn gently
+- Mention payment methods only if patterns are meaningful
+- Sound calm, practical, and intelligent
+
+Output:
+A single short insight sentence.
+`;
+    const response = await generateText(prompt);
+    console.log(response)
+    localStorage.setItem(todayKey, response);
+    return response;
+  } catch (err) {
+    console.error("AI Insight error:", err);
+    return "AI insight unavailable today.";
+  }
+};
+

@@ -10,6 +10,7 @@ import {
 } from "firebase/firestore";
 import { auth } from "./firebase";
 import { db } from "./firebase";
+import { getAveragePastMonths } from "../utils/dashboardCalculation";
 
 /* 🔥 NEW IMPORTS */
 import { getUserPreferences } from "./settingsService";
@@ -57,11 +58,11 @@ export const addExpense = async ({ title, amount, category, date }) => {
   const newMonthTotal = monthTotalBefore + numericAmount;
 
   /* 🚫 HARD BLOCK IF BUDGET EXCEEDED */
-  if (monthlyBudget > 0 && newMonthTotal > monthlyBudget) {
-    throw new Error(
-      "Monthly budget exceeded. Please update your budget in Preferences."
-    );
-  }
+  // if (monthlyBudget > 0 && newMonthTotal > monthlyBudget) {
+  //   throw new Error(
+  //     "Monthly budget exceeded. Please update your budget in Preferences."
+  //   );
+  // }
 
   /* ✅ SAVE EXPENSE */
   await addDoc(collection(db, "expenses"), {
@@ -151,7 +152,6 @@ export const compareCurrAndPrev = async (currentMonth, currentYear) => {
 
 export const getDashboardStats = async () => {
   const expenses = await getUserExpenses();
-
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
 
@@ -159,6 +159,8 @@ export const getDashboardStats = async () => {
     (sum, exp) => sum + Number(exp.amount || 0),
     0
   );
+
+  const averageMonth = await getAveragePastMonths(expenses);
 
   const monthTotal = expenses
     .filter((exp) => exp.date?.startsWith(todayStr.slice(0, 7)))
@@ -168,11 +170,33 @@ export const getDashboardStats = async () => {
     .filter((exp) => exp.date === todayStr)
     .reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
 
+  // 🔹 TOTAL CALENDAR DAYS (including days with NO expenses)
+  let totalCalendarDays = 0;
+
+  if (expenses.length > 0) {
+    const validDates = expenses
+      .map((e) => new Date(e.date))
+      .filter((d) => !isNaN(d));
+
+    if (validDates.length > 0) {
+      const firstExpenseDate = new Date(
+        Math.min(...validDates.map((d) => d.getTime()))
+      );
+
+      const diffMs = today.getTime() - firstExpenseDate.getTime();
+
+      totalCalendarDays =
+        Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1; // +1 to include today
+    }
+  }
+
   return {
     totalAmount,
     monthTotal,
     todayTotal,
     totalOrders: expenses.length,
+    averageMonth,
+    totalCalendarDays, // ✅ includes zero-expense days
   };
 };
 
