@@ -4,9 +4,19 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { getUserExpenses, deleteExpense } from "../services/expenseService";
 import { normalizePaymentMethod } from "../utils/payment";
+import { useAuth } from "../context/AuthContext";
+
+/* ✅ IMPORT FROM SINGLE CURRENCY SOURCE */
+import {
+  getAmountINR,
+  formatCurrency,
+} from "../utils/currency";
+
+/* ===================== COMPONENT ===================== */
 
 const Expenses = () => {
   const navigate = useNavigate();
+  const { preferredCurrency } = useAuth();
 
   const [expenseList, setExpenseList] = useState([]);
   const [searchText, setSearchText] = useState("");
@@ -48,16 +58,21 @@ const Expenses = () => {
         : a.createdAt?.seconds - b.createdAt?.seconds
     );
 
-  const totalAmount = filteredExpenses.reduce(
-    (sum, exp) => sum + Number(exp.amount || 0),
+  /* ===================== SUMMARY (INR BASE) ===================== */
+
+  const totalAmountINR = filteredExpenses.reduce(
+    (sum, exp) => sum + getAmountINR(exp),
     0
   );
 
   const transactionCount = filteredExpenses.length;
-  const averageAmount =
+
+  const averageAmountINR =
     transactionCount > 0
-      ? (totalAmount / transactionCount).toFixed(2)
-      : "0.00";
+      ? totalAmountINR / transactionCount
+      : 0;
+
+  /* ===================== STYLES ===================== */
 
   const getCategoryStyle = (cat) => {
     const styles = {
@@ -137,8 +152,14 @@ const Expenses = () => {
 
         {/* SUMMARY */}
         <div className="mb-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          <Summary label="Total" value={`₹${totalAmount.toFixed(2)}`} />
-          <Summary label="Average" value={`₹${averageAmount}`} />
+          <Summary
+            label="Total"
+            value={formatCurrency(totalAmountINR, preferredCurrency)}
+          />
+          <Summary
+            label="Average"
+            value={formatCurrency(averageAmountINR, preferredCurrency)}
+          />
           <Summary label="Transactions" value={transactionCount} />
         </div>
 
@@ -146,6 +167,7 @@ const Expenses = () => {
         <div className="md:hidden space-y-4">
           {filteredExpenses.map((exp) => {
             const payment = normalizePaymentMethod(exp.paymentMethod);
+            const amountINR = getAmountINR(exp);
 
             return (
               <div
@@ -155,7 +177,7 @@ const Expenses = () => {
                 <div className="flex justify-between mb-2">
                   <p className="font-black">{exp.title}</p>
                   <p className="font-black text-emerald-600">
-                    -₹{Number(exp.amount).toFixed(2)}
+                    -{formatCurrency(amountINR, preferredCurrency)}
                   </p>
                 </div>
 
@@ -219,6 +241,7 @@ const Expenses = () => {
             <tbody className="divide-y divide-white/20">
               {filteredExpenses.map((exp) => {
                 const payment = normalizePaymentMethod(exp.paymentMethod);
+                const amountINR = getAmountINR(exp);
 
                 return (
                   <tr key={exp.id} className="hover:bg-white/20">
@@ -245,7 +268,7 @@ const Expenses = () => {
                       </span>
                     </td>
                     <td className="py-5 pr-4 text-right font-semibold">
-                      -₹{Number(exp.amount).toFixed(2)}
+                      -{formatCurrency(amountINR, preferredCurrency)}
                     </td>
                     <td className="py-5 pr-4 text-right">
                       <button

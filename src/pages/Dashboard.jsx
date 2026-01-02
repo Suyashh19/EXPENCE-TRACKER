@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import {
   getDashboardStats,
@@ -10,6 +10,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../services/firebase";
 import { Chart } from "react-google-charts";
 import { getAiInsight } from "../services/geminiService";
+
 /* 🔥 SETTINGS + HELPERS */
 import {
   getUserPreferences,
@@ -23,12 +24,24 @@ import {
   markDailyReminderShown,
 } from "../utils/helpers";
 import { normalizePaymentMethod } from "../utils/payment";
+import { useAuth } from "../context/AuthContext";
+
+/* ✅ SINGLE CURRENCY SOURCE */
+import {
+  getAmountINR,
+  formatCurrency,
+  convertFromINR,
+} from "../utils/currency";
 
 /* 🔔 TOAST */
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+/* ===================== COMPONENT ===================== */
+
 export default function Dashboard() {
+  const { preferredCurrency } = useAuth();
+
   const [statsData, setStatsData] = useState(null);
   const [dataReady, setDataReady] = useState(false);
   const [recent, setRecent] = useState([]);
@@ -56,7 +69,37 @@ export default function Dashboard() {
     "#facc15",
   ];
 
-  /* ============================ SINGLE AUTH LISTENER ============================ */
+  /* ===================== BUILD CHART DATA (CURRENCY AWARE) ===================== */
+  const buildChartData = (allExpenses) => {
+    const months = [
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    ];
+
+    const totalForMonthINR = (month) =>
+      allExpenses
+        .filter((e) => {
+          if (!e.date) return false;
+          const [y, m] = e.date.split("-").map(Number);
+          return y === currentYear && m === month;
+        })
+        .reduce((sum, e) => sum + getAmountINR(e), 0);
+
+    setChartData([
+      [
+        "Month",
+        `Expenses (${preferredCurrency})`,
+        { role: "style" },
+      ],
+      ...months.map((m, i) => [
+        m,
+        convertFromINR(totalForMonthINR(i + 1), preferredCurrency),
+        "#434E78",
+      ]),
+    ]);
+  };
+
+  /* ===================== AUTH + DATA LOAD ===================== */
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) return;
@@ -74,61 +117,50 @@ export default function Dashboard() {
         compareCurrAndPrev(today.getMonth() + 1, today.getFullYear()),
         getUserPreferences(),
       ]);
- 
+
       setExpenses(allExpenses);
       setStatsData(stats);
       setRecent(recentTx);
       setMonthComparison(comparison);
       setPreferences(prefs);
-      setDataReady(true)
+      setDataReady(true);
 
-      /* Chart data */
-      const months = [
-        "Jan","Feb","Mar","Apr","May","Jun",
-        "Jul","Aug","Sep","Oct","Nov","Dec",
-      ];
-
-      const totalForMonth = (month) =>
-        allExpenses
-          .filter((e) => {
-            if (!e.date) return false;
-            const [y, m] = e.date.split("-").map(Number);
-            return y === currentYear && m === month;
-          })
-          .reduce((s, e) => s + Number(e.amount || 0), 0);
-
-      setChartData([
-        ["Month", "Expenses", { role: "style" }],
-        ...months.map((m, i) => [m, totalForMonth(i + 1), "#434E78"]),
-      ]);
+      buildChartData(allExpenses);
     });
 
     return unsubscribe;
   }, []);
 
-  /* ============================ AI INSIGHT ============================ */
+  /* 🔁 REBUILD CHART WHEN CURRENCY CHANGES */
   useEffect(() => {
-  if (!dataReady) return;
-
-  const runAI = async () => {
-    const context = `
-Monthly spent: ₹${statsData.monthTotal}
-Today's spent: ₹${statsData.todayTotal}
-Average of past three months: ₹${statsData.averageMonth}
-
-`;
-    try {
-      const result = await getAiInsight(context);
-      setInsight(result);
-    } catch (err) {
-      console.error("AI Insight failed", err);
+    if (expenses.length) {
+      buildChartData(expenses);
     }
-  };
+  }, [preferredCurrency]);
 
-  runAI();
-}, [dataReady]);
- 
-  /* ============================ 🔔 NOTIFICATIONS ========= =================== */
+  /* ===================== AI INSIGHT ===================== */
+  useEffect(() => {
+    if (!dataReady || !statsData) return;
+
+    const context = `
+Monthly spent: ${formatCurrency(statsData.monthTotal, preferredCurrency)}
+Today's spent: ${formatCurrency(statsData.todayTotal, preferredCurrency)}
+Average of past three months: ${formatCurrency(statsData.averageMonth, preferredCurrency)}
+`;
+
+    const runAI = async () => {
+      try {
+        const result = await getAiInsight(context);
+        setInsight(result);
+      } catch (err) {
+        console.error("AI Insight failed", err);
+      }
+    };
+
+    runAI();
+  }, [dataReady, preferredCurrency]);
+
+  /* ===================== 🔔 NOTIFICATIONS ===================== */
   useEffect(() => {
     if (!statsData || expenses.length === 0 || !preferences) return;
 
@@ -143,7 +175,12 @@ Average of past three months: ₹${statsData.averageMonth}
         hour >= 20 &&
         !hasShownDailyReminderToday()
       ) {
-        toast.info(`🧾 Today you spent ₹${getTodayTotal(expenses)}`);
+        toast.info(
+          `🧾 Today you spent ${formatCurrency(
+            getTodayTotal(expenses),
+            preferredCurrency
+          )}`
+        );
         markDailyReminderShown();
       }
 
@@ -163,39 +200,35 @@ Average of past three months: ₹${statsData.averageMonth}
     };
 
     runNotifications();
-  }, [statsData, expenses, preferences]);
-
-  /* ============================ PAYMENT INSIGHT ============================ */
-  const paymentInsight = useMemo(() => {
-    let cash = 0;
-    let digital = 0;
-
-    expenses.forEach((e) => {
-      const method = normalizePaymentMethod(e.paymentMethod);
-      if (method === "Cash") cash += Number(e.amount || 0);
-      else digital += Number(e.amount || 0);
-    });
-
-    return { cash, digital };
-  }, [expenses]);
+  }, [statsData, expenses, preferences, preferredCurrency]);
 
   if (!statsData) return null;
 
   return (
     <div className="flex flex-col gap-6 md:gap-8">
-      <Navbar monthlyBudget= {preferences.monthlyBudget} allTotal={statsData.totalAmount} totalDays={statsData.totalCalendarDays}/>
+      <Navbar
+        monthlyBudget={preferences?.monthlyBudget}
+        allTotal={statsData.totalAmount}
+        totalDays={statsData.totalCalendarDays}
+      />
 
-      {/* STATS */}
+      {/* ===================== STATS ===================== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
-        <StatCard label="Spent This Month" value={`₹${statsData.monthTotal}`} />
-        <StatCard label="Today's Expenses" value={`₹${statsData.todayTotal}`} />
+        <StatCard
+          label="Spent This Month"
+          value={formatCurrency(statsData.monthTotal, preferredCurrency)}
+        />
+        <StatCard
+          label="Today's Expenses"
+          value={formatCurrency(statsData.todayTotal, preferredCurrency)}
+        />
 
         <div className="rounded-3xl md:rounded-[3.5rem] thin-glass p-6 md:p-10">
           <p className="text-xs font-black uppercase tracking-widest text-slate-400">
             Last three months average
           </p>
           <h3 className="mt-4 text-3xl md:text-4xl font-black text-slate-900">
-            ₹{statsData.averageMonth}
+            {formatCurrency(statsData.averageMonth, preferredCurrency)}
           </h3>
 
           {monthComparison && (
@@ -213,8 +246,7 @@ Average of past three months: ₹${statsData.averageMonth}
         </div>
       </div>
 
-
-      {/* CHART + RECENT */}
+      {/* ===================== CHART + RECENT ===================== */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 mb-10">
         <div className="lg:col-span-2 rounded-3xl md:rounded-[4rem] thin-glass p-6 md:p-12">
           <div className="flex justify-between mb-4">
@@ -264,40 +296,38 @@ Average of past three months: ₹${statsData.averageMonth}
                   </p>
                 </div>
                 <p className="font-black text-emerald-600">
-                  ₹{item.amount}
+                  {formatCurrency(getAmountINR(item), preferredCurrency)}
                 </p>
               </div>
             ))}
           </div>
         </div>
-
       </div>
-              {/* QUICK INSIGHT */}
-<div className="rounded-3xl md:rounded-[4rem] thin-glass p-6 md:p-10">
-  <div className="flex items-center gap-2 mb-3">
-    <span className="text-xl">💡</span>
-    <p className="text-sm font-black uppercase tracking-wide text-slate-700">
-      Spending Insight
-    </p>
-  </div>
 
+      {/* ===================== QUICK INSIGHT ===================== */}
+      <div className="rounded-3xl md:rounded-[4rem] thin-glass p-6 md:p-10">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-xl">💡</span>
+          <p className="text-sm font-black uppercase tracking-wide text-slate-700">
+            Spending Insight
+          </p>
+        </div>
 
-  {insight && (
-    <div className="mt-4 rounded-2xl bg-white/40 p-4 backdrop-blur-sm">
-      <p className="text-slate-800 font-semibold leading-relaxed">
-        {insight}
-      </p>
-    </div>
-  )}
-</div>
-
+        {insight && (
+          <div className="mt-4 rounded-2xl bg-white/40 p-4 backdrop-blur-sm">
+            <p className="text-slate-800 font-semibold leading-relaxed">
+              {insight}
+            </p>
+          </div>
+        )}
+      </div>
 
       <ToastContainer position="top-right" />
     </div>
   );
 }
 
-/* ============================ STAT CARD ============================ */
+/* ===================== STAT CARD ===================== */
 const StatCard = ({ label, value }) => (
   <div className="rounded-3xl md:rounded-[3.5rem] thin-glass p-6 md:p-10">
     <p className="text-xs font-black uppercase tracking-widest text-slate-400">

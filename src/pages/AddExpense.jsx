@@ -10,6 +10,7 @@ export default function AddExpense() {
   const [formData, setFormData] = useState({
     title: "",
     amount: "",
+    currency: "INR", // 🔥 STEP-2
     category: "Food",
     paymentMethod: "UPI",
     date: new Date().toISOString().split("T")[0],
@@ -28,6 +29,13 @@ export default function AddExpense() {
   ];
 
   const paymentMethods = ["UPI", "Card", "Cash", "Online", "Other"];
+
+  const currencies = [
+    { label: "INR (₹)", value: "INR" },
+    { label: "USD ($)", value: "USD" },
+    { label: "EUR (€)", value: "EUR" },
+    { label: "GBP (£)", value: "GBP" },
+  ];
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -62,56 +70,50 @@ export default function AddExpense() {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  try {
-    const result = await addExpense({
-      ...formData,
-      amount: Number(formData.amount),
-      paymentMethod: normalizePaymentMethod(formData.paymentMethod), // ✅ FIX
-    });
+    try {
+      const result = await addExpense({
+        ...formData,
+        amount: Number(formData.amount),
+        paymentMethod: normalizePaymentMethod(formData.paymentMethod),
+      });
 
-    toast.success("Expense saved successfully 💸");
+      toast.success("Expense saved successfully 💸");
 
-    const notifications = await getUserNotifications();
-    if (
-      notifications?.monthlyBudgetAlert &&
-      result?.monthlyBudget &&
-      result?.monthTotal / result.monthlyBudget >= 0.8
-    ) {
-      const percent = Math.round(
-        (result.monthTotal / result.monthlyBudget) * 100
-      );
-      toast.warning(`⚠️ You used ${percent}% of your budget`);
+      const notifications = await getUserNotifications();
+      if (
+        notifications?.monthlyBudgetAlert &&
+        result?.monthlyBudget &&
+        result?.monthTotal / result.monthlyBudget >= 0.8
+      ) {
+        const percent = Math.round(
+          (result.monthTotal / result.monthlyBudget) * 100
+        );
+        toast.warning(`⚠️ You used ${percent}% of your budget`);
+      }
+
+      setFormData({
+        title: "",
+        amount: "",
+        currency: "INR",
+        category: "Food",
+        paymentMethod: "UPI",
+        date: new Date().toISOString().split("T")[0],
+      });
+      setAiInput("");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save expense");
     }
-
-    setFormData({
-      title: "",
-      amount: "",
-      category: "Food",
-      paymentMethod: "UPI",
-      date: new Date().toISOString().split("T")[0],
-    });
-    setAiInput("");
-  } catch (err){
-    console.log(err)
-    toast.error("Failed to save expense");
-  }
-};
-
+  };
 
   return (
     <div className="flex flex-col gap-6 md:gap-8">
       <Navbar />
 
       <div className="flex justify-center px-4 md:px-0 py-6 md:py-10">
-        <div className="
-          w-full max-w-2xl
-          rounded-3xl md:rounded-[3.5rem]
-          thin-glass
-          p-6 md:p-12
-          shadow-2xl
-        ">
+        <div className="w-full max-w-2xl rounded-3xl md:rounded-[3.5rem] thin-glass p-6 md:p-12 shadow-2xl">
           {/* HEADER */}
           <div className="mb-8 text-center">
             <h2 className="text-2xl md:text-3xl font-black text-slate-900">
@@ -147,15 +149,55 @@ export default function AddExpense() {
 
           {/* FORM */}
           <form className="space-y-6" onSubmit={handleSubmit}>
-            <Input label="Expense Title" name="title" value={formData.title} onChange={handleChange} />
+            <Input
+              label="Expense Title"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+            />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input label="Amount" type="number" name="amount" value={formData.amount} onChange={handleChange} />
-              <Input label="Date" type="date" name="date" value={formData.date} onChange={handleChange} />
+              <Input
+                label="Amount"
+                type="number"
+                name="amount"
+                value={formData.amount}
+                onChange={handleChange}
+              />
+
+              {/* 🔥 Currency Selector (NEW) */}
+              <Select
+                label="Currency"
+                name="currency"
+                value={formData.currency}
+                options={currencies}
+                onChange={handleChange}
+              />
             </div>
 
-            <Select label="Category" name="category" value={formData.category} options={categories} onChange={handleChange} />
-            <Select label="Payment Method" name="paymentMethod" value={formData.paymentMethod} options={paymentMethods} onChange={handleChange} />
+            <Input
+              label="Date"
+              type="date"
+              name="date"
+              value={formData.date}
+              onChange={handleChange}
+            />
+
+            <Select
+              label="Category"
+              name="category"
+              value={formData.category}
+              options={categories}
+              onChange={handleChange}
+            />
+
+            <Select
+              label="Payment Method"
+              name="paymentMethod"
+              value={formData.paymentMethod}
+              options={paymentMethods}
+              onChange={handleChange}
+            />
 
             <button
               type="submit"
@@ -195,9 +237,13 @@ const Select = ({ label, options, ...props }) => (
       {...props}
       className="w-full rounded-2xl border bg-white/20 px-4 py-3 text-sm outline-none"
     >
-      {options.map((o) => (
-        <option key={o} value={o}>{o}</option>
-      ))}
+      {options.map((o) =>
+        typeof o === "string" ? (
+          <option key={o} value={o}>{o}</option>
+        ) : (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        )
+      )}
     </select>
   </div>
 );

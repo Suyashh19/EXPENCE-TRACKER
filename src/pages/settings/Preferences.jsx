@@ -3,18 +3,27 @@ import {
   getUserPreferences,
   updateUserPreferences,
 } from "../../services/settingsService";
+import {
+  getPreferredCurrency,
+  updatePreferredCurrency,
+} from "../../services/userService";
 
 export default function Preferences() {
   const [monthlyBudget, setMonthlyBudget] = useState("");
+  const [preferredCurrency, setPreferredCurrency] = useState("INR");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const loadPreferences = async () => {
       const prefs = await getUserPreferences();
+      const currency = await getPreferredCurrency();
+
       if (prefs?.monthlyBudget !== undefined) {
         setMonthlyBudget(prefs.monthlyBudget);
       }
+
+      setPreferredCurrency(currency || "INR");
       setLoading(false);
     };
 
@@ -24,9 +33,13 @@ export default function Preferences() {
   const handleSave = async () => {
     setSaving(true);
 
+    // existing logic (unchanged)
     await updateUserPreferences({
       monthlyBudget: Number(monthlyBudget),
     });
+
+    // 🔥 currency preference save
+    await updatePreferredCurrency(preferredCurrency);
 
     setSaving(false);
     alert("Preferences saved");
@@ -42,7 +55,7 @@ export default function Preferences() {
         Preferences
       </h2>
 
-      {/* Monthly Budget */}
+      {/* Monthly Budget (UNCHANGED) */}
       <div className="space-y-2">
         <label className="text-xs font-black uppercase tracking-widest text-slate-400">
           Monthly Budget
@@ -54,6 +67,23 @@ export default function Preferences() {
           onChange={(e) => setMonthlyBudget(e.target.value)}
           className="w-full rounded-2xl border border-white/60 bg-white/20 px-5 py-3 outline-none"
         />
+      </div>
+
+      {/* 🔥 Currency Preference (NEW – minimal & safe UI) */}
+      <div className="space-y-2">
+        <label className="text-xs font-black uppercase tracking-widest text-slate-400">
+          Preferred Currency
+        </label>
+        <select
+          value={preferredCurrency}
+          onChange={(e) => setPreferredCurrency(e.target.value)}
+          className="w-full rounded-2xl border border-white/60 bg-white/20 px-5 py-3 outline-none"
+        >
+          <option value="INR">INR (₹)</option>
+          <option value="USD">USD ($)</option>
+          <option value="EUR">EUR (€)</option>
+          <option value="GBP">GBP (£)</option>
+        </select>
       </div>
 
       <button

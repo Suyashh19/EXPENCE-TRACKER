@@ -12,9 +12,28 @@ import { auth } from "./firebase";
 import { db } from "./firebase";
 import { getAveragePastMonths } from "../utils/dashboardCalculation";
 
-/* 🔥 NEW IMPORTS */
+/* 🔥 EXISTING IMPORTS */
 import { getUserPreferences } from "./settingsService";
 import { getCurrentMonthTotal } from "../utils/helpers";
+
+/* ============================
+   STEP-2: EXCHANGE RATES
+   Base currency = INR
+============================ */
+
+// 1 INR = X currency
+const EXCHANGE_RATES = {
+  INR: 1,
+  USD: 0.012,
+  EUR: 0.011,
+  GBP: 0.0095,
+};
+
+// Convert any currency → INR
+const convertToINR = (amount, currency = "INR") => {
+  if (!EXCHANGE_RATES[currency]) return amount;
+  return Number(amount) / EXCHANGE_RATES[currency];
+};
 
 /* ============================
    GET ALL USER EXPENSES
@@ -38,10 +57,17 @@ export const getUserExpenses = async () => {
 };
 
 /* ============================
-   ADD EXPENSE (FIXED + FINAL)
+   ADD EXPENSE (UPDATED – STEP 2)
 ============================ */
 
-export const addExpense = async ({ title, amount, category, date }) => {
+export const addExpense = async ({
+  title,
+  amount,
+  currency = "INR", // 🔥 NEW (safe default)
+  category,
+  date,
+  paymentMethod,
+}) => {
   const user = auth.currentUser;
   if (!user) throw new Error("User not authenticated");
 
@@ -51,24 +77,34 @@ export const addExpense = async ({ title, amount, category, date }) => {
   const preferences = await getUserPreferences();
   const monthlyBudget = preferences?.monthlyBudget || 0;
 
-  /* 🔢 GET CURRENT MONTH TOTAL (BEFORE ADD) */
+  /* 🔢 GET CURRENT MONTH TOTAL (IN INR) */
   const expensesBefore = await getUserExpenses();
-  const monthTotalBefore = getCurrentMonthTotal(expensesBefore);
+  const monthTotalBefore = getCurrentMonthTotal(
+    expensesBefore.map((e) => ({
+      ...e,
+      amount: e.amountINR ?? e.amount, // backward compatibility
+    }))
+  );
 
-  const newMonthTotal = monthTotalBefore + numericAmount;
+  /* 🔁 CONVERT TO INR */
+  const amountINR = convertToINR(numericAmount, currency);
+  const newMonthTotal = monthTotalBefore + amountINR;
 
-  /* 🚫 HARD BLOCK IF BUDGET EXCEEDED */
+  /* 🚫 HARD BLOCK IF BUDGET EXCEEDED (unchanged) */
   // if (monthlyBudget > 0 && newMonthTotal > monthlyBudget) {
   //   throw new Error(
   //     "Monthly budget exceeded. Please update your budget in Preferences."
   //   );
   // }
 
-  /* ✅ SAVE EXPENSE */
+  /* ✅ SAVE EXPENSE (INR BASED) */
   await addDoc(collection(db, "expenses"), {
     title,
-    amount: numericAmount,
+    amountINR,                 // 🔥 BASE VALUE
+    originalAmount: numericAmount,
+    originalCurrency: currency,
     category,
+    paymentMethod,
     date,
     userId: user.uid,
     createdAt: Timestamp.now(),
@@ -94,7 +130,11 @@ export const getUserExpensesByMonth = async (month, year) => {
       const [y, m] = exp.date.split("-").map(Number);
       return y === year && m === month;
     })
-    .reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
+    .reduce(
+      (sum, exp) =>
+        sum + Number(exp.amountINR ?? exp.amount ?? 0),
+      0
+    );
 };
 
 /* ============================
@@ -156,7 +196,8 @@ export const getDashboardStats = async () => {
   const todayStr = today.toISOString().split("T")[0];
 
   const totalAmount = expenses.reduce(
-    (sum, exp) => sum + Number(exp.amount || 0),
+    (sum, exp) =>
+      sum + Number(exp.amountINR ?? exp.amount ?? 0),
     0
   );
 
@@ -164,13 +205,20 @@ export const getDashboardStats = async () => {
 
   const monthTotal = expenses
     .filter((exp) => exp.date?.startsWith(todayStr.slice(0, 7)))
-    .reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
+    .reduce(
+      (sum, exp) =>
+        sum + Number(exp.amountINR ?? exp.amount ?? 0),
+      0
+    );
 
   const todayTotal = expenses
     .filter((exp) => exp.date === todayStr)
-    .reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
+    .reduce(
+      (sum, exp) =>
+        sum + Number(exp.amountINR ?? exp.amount ?? 0),
+      0
+    );
 
-  // 🔹 TOTAL CALENDAR DAYS (including days with NO expenses)
   let totalCalendarDays = 0;
 
   if (expenses.length > 0) {
@@ -186,7 +234,7 @@ export const getDashboardStats = async () => {
       const diffMs = today.getTime() - firstExpenseDate.getTime();
 
       totalCalendarDays =
-        Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1; // +1 to include today
+        Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1;
     }
   }
 
@@ -196,7 +244,7 @@ export const getDashboardStats = async () => {
     todayTotal,
     totalOrders: expenses.length,
     averageMonth,
-    totalCalendarDays, // ✅ includes zero-expense days
+    totalCalendarDays,
   };
 };
 

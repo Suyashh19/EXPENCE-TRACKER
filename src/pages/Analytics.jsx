@@ -2,6 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import Navbar from "../components/Navbar";
 import { getUserExpenses } from "../services/expenseService";
 import { normalizePaymentMethod } from "../utils/payment";
+import { useAuth } from "../context/AuthContext";
+
+/* ✅ SINGLE CURRENCY SOURCE */
+import {
+  getAmountINR,
+  convertFromINR,
+  formatCurrency,
+} from "../utils/currency";
 
 import {
   ResponsiveContainer,
@@ -71,7 +79,7 @@ const aggregateTrend = (expenses, mode) => {
       ).padStart(2, "0")}`;
     }
 
-    map[key] = (map[key] || 0) + Number(e.amount);
+    map[key] = (map[key] || 0) + getAmountINR(e);
   });
 
   return Object.entries(map).map(([name, value]) => ({ name, value }));
@@ -81,7 +89,7 @@ const aggregateByCategory = (expenses) => {
   const map = {};
   expenses.forEach((e) => {
     const key = e.category || "Other";
-    map[key] = (map[key] || 0) + Number(e.amount);
+    map[key] = (map[key] || 0) + getAmountINR(e);
   });
   return Object.entries(map).map(([name, value]) => ({ name, value }));
 };
@@ -90,7 +98,7 @@ const aggregatePaymentMethods = (expenses) => {
   const map = {};
   expenses.forEach((e) => {
     const key = normalizePaymentMethod(e.paymentMethod);
-    map[key] = (map[key] || 0) + Number(e.amount);
+    map[key] = (map[key] || 0) + getAmountINR(e);
   });
   return Object.entries(map).map(([name, value]) => ({ name, value }));
 };
@@ -120,6 +128,7 @@ const ActivePieSlice = ({
 /* ===================== COMPONENT ===================== */
 
 export default function Analytics() {
+  const { preferredCurrency } = useAuth();
   const [expenses, setExpenses] = useState([]);
   const [mode, setMode] = useState("monthly");
 
@@ -132,28 +141,47 @@ export default function Analytics() {
   }, []);
 
   const trendData = useMemo(
-    () => aggregateTrend(expenses, mode),
-    [expenses, mode]
+    () =>
+      aggregateTrend(expenses, mode).map((d) => ({
+        ...d,
+        value: convertFromINR(d.value, preferredCurrency),
+      })),
+    [expenses, mode, preferredCurrency]
   );
 
   const categoryData = useMemo(
-    () => aggregateByCategory(expenses),
-    [expenses]
+    () =>
+      aggregateByCategory(expenses).map((d) => ({
+        ...d,
+        value: convertFromINR(d.value, preferredCurrency),
+      })),
+    [expenses, preferredCurrency]
   );
 
   const paymentData = useMemo(
-    () => aggregatePaymentMethods(expenses),
-    [expenses]
+    () =>
+      aggregatePaymentMethods(expenses).map((d) => ({
+        ...d,
+        value: convertFromINR(d.value, preferredCurrency),
+      })),
+    [expenses, preferredCurrency]
   );
 
-  const totalSpent = expenses.reduce((s, e) => s + Number(e.amount), 0);
-  const highestExpense = Math.max(0, ...expenses.map((e) => Number(e.amount)));
+  const totalSpentINR = expenses.reduce(
+    (s, e) => s + getAmountINR(e),
+    0
+  );
 
-  const avgDaily = (() => {
+  const highestExpenseINR = Math.max(
+    0,
+    ...expenses.map((e) => getAmountINR(e))
+  );
+
+  const avgDailyINR = (() => {
     const days = new Set(
       expenses.map((e) => getExpenseDate(e)).filter(Boolean)
     ).size;
-    return days ? (totalSpent / days).toFixed(2) : "0.00";
+    return days ? totalSpentINR / days : 0;
   })();
 
   return (
@@ -191,9 +219,18 @@ export default function Analytics() {
 
         {/* STATS */}
         <div className="grid grid-cols-3 gap-6 mb-10">
-          <Stat label="Total Spent" value={`₹${totalSpent.toFixed(2)}`} />
-          <Stat label="Daily Avg" value={`₹${avgDaily}`} />
-          <Stat label="Highest Expense" value={`₹${highestExpense}`} />
+          <Stat
+            label="Total Spent"
+            value={formatCurrency(totalSpentINR, preferredCurrency)}
+          />
+          <Stat
+            label="Daily Avg"
+            value={formatCurrency(avgDailyINR, preferredCurrency)}
+          />
+          <Stat
+            label="Highest Expense"
+            value={formatCurrency(highestExpenseINR, preferredCurrency)}
+          />
         </div>
 
         {/* TREND */}

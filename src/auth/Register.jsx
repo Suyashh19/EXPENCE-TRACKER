@@ -2,7 +2,9 @@ import { useState } from "react";
 import { registerUser, loginWithGoogle } from "../services/authService";
 import { useNavigate, Link } from "react-router-dom";
 import { Mail, Lock } from "lucide-react";
-import { ToastContainer,toast } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
+import { doc, setDoc } from "firebase/firestore";
+import { auth, db } from "../services/firebase";
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -12,19 +14,41 @@ export default function Register() {
   const handleRegister = async (e) => {
     e.preventDefault();
     try {
-      await registerUser(email, password);
+      const cred = await registerUser(email, password);
+
+      // 🔥 STEP-1: create user document with default INR currency
+      await setDoc(
+        doc(db, "users", cred.user.uid),
+        {
+          preferredCurrency: "INR",
+          createdAt: new Date(),
+        },
+        { merge: true }
+      );
+
       navigate("/dashboard");
     } catch (err) {
       toast.error(err.message || "Some error occurred", {
-              className: "error-toast",
-              bodyClassName: "error-toast-body",
-            });
+        className: "error-toast",
+        bodyClassName: "error-toast-body",
+      });
     }
   };
 
   const handleGoogleRegister = async () => {
     try {
-      await loginWithGoogle();
+      const cred = await loginWithGoogle();
+
+      // 🔥 STEP-1: ensure user doc exists for Google users too
+      await setDoc(
+        doc(db, "users", cred.user.uid),
+        {
+          preferredCurrency: "INR",
+          createdAt: new Date(),
+        },
+        { merge: true }
+      );
+
       navigate("/dashboard");
     } catch (err) {
       toast.error(err.message || "Some error occurred", {
@@ -36,7 +60,6 @@ export default function Register() {
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center px-6">
-
       {/* 🌍 Glass Background */}
       <div className="glass-world fixed inset-0 -z-10">
         <div className="shine-blob blob-indigo"></div>
@@ -45,7 +68,6 @@ export default function Register() {
 
       {/* ================= REGISTER CARD ================= */}
       <div className="w-full max-w-md rounded-[3.5rem] thin-glass p-12 shadow-2xl backdrop-blur-[160px]">
-
         {/* Header */}
         <div className="text-center mb-10">
           <h2 className="text-3xl font-black tracking-tight text-slate-900">
@@ -59,7 +81,6 @@ export default function Register() {
 
         {/* Form */}
         <form onSubmit={handleRegister} className="space-y-6">
-
           {/* Email */}
           <div className="relative">
             <Mail
@@ -110,19 +131,17 @@ export default function Register() {
           <div className="h-px flex-1 bg-white/40"></div>
         </div>
 
-        {/* Google Register (glass style) */}
+        {/* Google Register */}
         <button
           onClick={handleGoogleRegister}
           className="w-full flex items-center justify-center gap-3 rounded-2xl border border-white/60 bg-white/20 py-4 text-lg font-black text-slate-800 shadow-xl backdrop-blur-md hover:bg-white/30 hover:scale-[1.01] transition"
         >
-          {/* Google Logo */}
           <svg width="22" height="22" viewBox="0 0 48 48">
             <path fill="#EA4335" d="M24 9.5c3.3 0 6.3 1.1 8.6 3.2l6.4-6.4C34.8 2.5 29.7 0 24 0 14.6 0 6.6 5.4 2.7 13.2l7.5 5.8C12.3 13.2 17.7 9.5 24 9.5z"/>
             <path fill="#4285F4" d="M46.1 24.6c0-1.6-.1-2.8-.4-4H24v7.6h12.7c-.3 2-1.6 5-4.6 7l7.1 5.5c4.1-3.8 6.9-9.3 6.9-16.1z"/>
             <path fill="#FBBC05" d="M10.2 28.9c-.5-1.4-.8-2.9-.8-4.4s.3-3 .8-4.4l-7.5-5.8C.9 17.5 0 20.7 0 24s.9 6.5 2.7 9.7l7.5-5.8z"/>
             <path fill="#34A853" d="M24 48c5.7 0 10.5-1.9 14-5.1l-7.1-5.5c-1.9 1.3-4.5 2.2-6.9 2.2-6.3 0-11.7-3.7-13.8-9.1l-7.5 5.8C6.6 42.6 14.6 48 24 48z"/>
           </svg>
-
           <span>Continue with Google</span>
         </button>
 
@@ -137,6 +156,7 @@ export default function Register() {
           </Link>
         </p>
       </div>
+
       <ToastContainer />
     </div>
   );
