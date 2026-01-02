@@ -9,7 +9,7 @@ import {
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../services/firebase";
 import { Chart } from "react-google-charts";
-
+import { getAiInsight } from "../services/geminiService";
 /* 🔥 SETTINGS + HELPERS */
 import {
   getUserPreferences,
@@ -30,13 +30,17 @@ import "react-toastify/dist/ReactToastify.css";
 
 export default function Dashboard() {
   const [statsData, setStatsData] = useState(null);
+  const [dataReady, setDataReady] = useState(false);
   const [recent, setRecent] = useState([]);
+  const [expenses, setExpenses] = useState([]);
+  const [preferences, setPreferences] = useState(null);
   const [monthComparison, setMonthComparison] = useState(null);
+  const [insight, setInsight] = useState("");
+
   const [chartType, setChartType] = useState("ColumnChart");
   const [chartData, setChartData] = useState([
     ["Month", "Expenses", { role: "style" }],
   ]);
-  const [expenses, setExpenses] = useState([]);
 
   const today = new Date();
   const currentYear = today.getFullYear();
@@ -52,13 +56,37 @@ export default function Dashboard() {
     "#facc15",
   ];
 
-  /* ============================ LOAD EXPENSES + CHART ============================ */
+  /* ============================ SINGLE AUTH LISTENER ============================ */
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) return;
 
-      const allExpenses = await getUserExpenses();
+      const [
+        allExpenses,
+        stats,
+        recentTx,
+        comparison,
+        prefs,
+      ] = await Promise.all([
+        getUserExpenses(),
+        getDashboardStats(),
+        getRecentExpenses(),
+        compareCurrAndPrev(today.getMonth() + 1, today.getFullYear()),
+        getUserPreferences(),
+      ]);
+ 
       setExpenses(allExpenses);
+      setStatsData(stats);
+      setRecent(recentTx);
+      setMonthComparison(comparison);
+      setPreferences(prefs);
+      setDataReady(true)
+
+      /* Chart data */
+      const months = [
+        "Jan","Feb","Mar","Apr","May","Jun",
+        "Jul","Aug","Sep","Oct","Nov","Dec",
+      ];
 
       const totalForMonth = (month) =>
         allExpenses
@@ -69,60 +97,56 @@ export default function Dashboard() {
           })
           .reduce((s, e) => s + Number(e.amount || 0), 0);
 
-      const months = [
-        "Jan","Feb","Mar","Apr","May","Jun",
-        "Jul","Aug","Sep","Oct","Nov","Dec",
-      ];
-
       setChartData([
         ["Month", "Expenses", { role: "style" }],
         ...months.map((m, i) => [m, totalForMonth(i + 1), "#434E78"]),
       ]);
     });
 
-    return () => unsubscribe();
-  }, [currentYear]);
-
-  /* ============================ STATS + RECENT ============================ */
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) return;
-
-      setStatsData(await getDashboardStats());
-      setMonthComparison(
-        await compareCurrAndPrev(today.getMonth() + 1, today.getFullYear())
-      );
-      setRecent(await getRecentExpenses());
-    });
-
-    return () => unsubscribe();
+    return unsubscribe;
   }, []);
 
-  /* ============================ 🔔 NOTIFICATIONS (FIXED + UI) ============================ */
+  /* ============================ AI INSIGHT ============================ */
   useEffect(() => {
-    if (!statsData || expenses.length === 0) return;
+  if (!dataReady) return;
+
+  const runAI = async () => {
+    const context = `
+Monthly spent: ₹${statsData.monthTotal}
+Today's spent: ₹${statsData.todayTotal}
+Average of past three months: ₹${statsData.averageMonth}
+
+`;
+    try {
+      const result = await getAiInsight(context);
+      setInsight(result);
+    } catch (err) {
+      console.error("AI Insight failed", err);
+    }
+  };
+
+  runAI();
+}, [dataReady]);
+ 
+  /* ============================ 🔔 NOTIFICATIONS ========= =================== */
+  useEffect(() => {
+    if (!statsData || expenses.length === 0 || !preferences) return;
 
     const runNotifications = async () => {
-      const preferences = await getUserPreferences();
       const notifications = await getUserNotifications();
-      if (!preferences || !notifications) return;
+      if (!notifications) return;
 
       const hour = new Date().getHours();
 
-      /* 🔔 DAILY REMINDER — ONLY ONCE PER DAY AFTER 8 PM */
       if (
         notifications.dailyExpenseReminder &&
         hour >= 20 &&
         !hasShownDailyReminderToday()
       ) {
-        toast.info(
-          `🧾 Today you spent ₹${getTodayTotal(expenses)}`,
-          { autoClose: 6000 }
-        );
+        toast.info(`🧾 Today you spent ₹${getTodayTotal(expenses)}`);
         markDailyReminderShown();
       }
 
-      /* 🔔 MONTHLY BUDGET WARNING */
       if (
         notifications.monthlyBudgetAlert &&
         preferences.monthlyBudget > 0
@@ -133,16 +157,13 @@ export default function Dashboard() {
         );
 
         if (percent >= 80) {
-          toast.warning(
-            `⚠️ You have used ${percent}% of your monthly budget`,
-            { autoClose: 7000 }
-          );
+          toast.warning(`⚠️ You have used ${percent}% of your monthly budget`);
         }
       }
     };
 
     runNotifications();
-  }, [statsData, expenses]);
+  }, [statsData, expenses, preferences]);
 
   /* ============================ PAYMENT INSIGHT ============================ */
   const paymentInsight = useMemo(() => {
@@ -162,18 +183,19 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-col gap-6 md:gap-8">
-      <Navbar />
+      <Navbar monthlyBudget= {preferences.monthlyBudget} allTotal={statsData.totalAmount} totalDays={statsData.totalCalendarDays}/>
 
       {/* STATS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
-        <StatCard label="Total Expense" value={`₹${statsData.totalAmount}`} />
+        <StatCard label="Spent This Month" value={`₹${statsData.monthTotal}`} />
+        <StatCard label="Today's Expenses" value={`₹${statsData.todayTotal}`} />
 
         <div className="rounded-3xl md:rounded-[3.5rem] thin-glass p-6 md:p-10">
           <p className="text-xs font-black uppercase tracking-widest text-slate-400">
-            This Month
+            Last three months average
           </p>
           <h3 className="mt-4 text-3xl md:text-4xl font-black text-slate-900">
-            ₹{statsData.monthTotal}
+            ₹{statsData.averageMonth}
           </h3>
 
           {monthComparison && (
@@ -189,34 +211,29 @@ export default function Dashboard() {
             </p>
           )}
         </div>
-
-        <StatCard
-          label="Today's Expenses"
-          value={`₹${statsData.todayTotal}`}
-        />
       </div>
 
-      {/* QUICK INSIGHT */}
-      <div className="rounded-3xl md:rounded-[3.5rem] thin-glass p-6 md:p-8">
-        <p className="text-sm font-black text-slate-700 mb-2">
-          💡 Spending Insight
-        </p>
-        <p className="text-slate-600 font-semibold">
-          You spent{" "}
-          <span className="font-black text-slate-900">
-            ₹{paymentInsight.digital}
-          </span>{" "}
-          digitally and{" "}
-          <span className="font-black text-slate-900">
-            ₹{paymentInsight.cash}
-          </span>{" "}
-          using cash this month.
-        </p>
-      </div>
 
       {/* CHART + RECENT */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 mb-10">
         <div className="lg:col-span-2 rounded-3xl md:rounded-[4rem] thin-glass p-6 md:p-12">
+          <div className="flex justify-between mb-4">
+            <h3 className="text-xl md:text-2xl font-black">
+              Expenses Analysis
+            </h3>
+
+            <select
+              value={chartType}
+              onChange={(e) => setChartType(e.target.value)}
+              className="rounded-xl border px-4 py-2 text-sm"
+            >
+              <option value="ColumnChart">Column</option>
+              <option value="LineChart">Line</option>
+              <option value="AreaChart">Area</option>
+              <option value="PieChart">Pie</option>
+            </select>
+          </div>
+
           <Chart
             chartType={chartType}
             width="100%"
@@ -243,8 +260,7 @@ export default function Dashboard() {
                 <div>
                   <p className="font-black">{item.title}</p>
                   <p className="text-xs text-slate-400">
-                    {item.category} •{" "}
-                    {normalizePaymentMethod(item.paymentMethod)}
+                    {item.category} • {normalizePaymentMethod(item.paymentMethod)}
                   </p>
                 </div>
                 <p className="font-black text-emerald-600">
@@ -254,9 +270,28 @@ export default function Dashboard() {
             ))}
           </div>
         </div>
-      </div>
 
-      {/* 🔔 TOAST UI */}
+      </div>
+              {/* QUICK INSIGHT */}
+<div className="rounded-3xl md:rounded-[4rem] thin-glass p-6 md:p-10">
+  <div className="flex items-center gap-2 mb-3">
+    <span className="text-xl">💡</span>
+    <p className="text-sm font-black uppercase tracking-wide text-slate-700">
+      Spending Insight
+    </p>
+  </div>
+
+
+  {insight && (
+    <div className="mt-4 rounded-2xl bg-white/40 p-4 backdrop-blur-sm">
+      <p className="text-slate-800 font-semibold leading-relaxed">
+        {insight}
+      </p>
+    </div>
+  )}
+</div>
+
+
       <ToastContainer position="top-right" />
     </div>
   );

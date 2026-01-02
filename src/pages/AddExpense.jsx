@@ -93,7 +93,8 @@ export default function AddExpense() {
       date: new Date().toISOString().split("T")[0],
     });
     setAiInput("");
-  } catch {
+  } catch (err){
+    console.log(err)
     toast.error("Failed to save expense");
   }
 };
