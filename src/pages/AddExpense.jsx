@@ -4,6 +4,7 @@ import { addExpense } from "../services/expenseService";
 import { parseExpenseMessage } from "../services/geminiService";
 import { getUserNotifications } from "../services/settingsService";
 import { ToastContainer, toast } from "react-toastify";
+import { normalizePaymentMethod } from "../utils/payment";
 
 export default function AddExpense() {
   const [formData, setFormData] = useState({
@@ -61,40 +62,42 @@ export default function AddExpense() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    try {
-      const result = await addExpense({
-        ...formData,
-        amount: Number(formData.amount),
-      });
+  try {
+    const result = await addExpense({
+      ...formData,
+      amount: Number(formData.amount),
+      paymentMethod: normalizePaymentMethod(formData.paymentMethod), // ✅ FIX
+    });
 
-      toast.success("Expense saved successfully 💸");
+    toast.success("Expense saved successfully 💸");
 
-      const notifications = await getUserNotifications();
-      if (
-        notifications?.monthlyBudgetAlert &&
-        result?.monthlyBudget &&
-        result?.monthTotal / result.monthlyBudget >= 0.8
-      ) {
-        const percent = Math.round(
-          (result.monthTotal / result.monthlyBudget) * 100
-        );
-        toast.warning(`⚠️ You used ${percent}% of your budget`);
-      }
-
-      setFormData({
-        title: "",
-        amount: "",
-        category: "Food",
-        paymentMethod: "UPI",
-        date: new Date().toISOString().split("T")[0],
-      });
-      setAiInput("");
-    } catch {
-      toast.error("Failed to save expense");
+    const notifications = await getUserNotifications();
+    if (
+      notifications?.monthlyBudgetAlert &&
+      result?.monthlyBudget &&
+      result?.monthTotal / result.monthlyBudget >= 0.8
+    ) {
+      const percent = Math.round(
+        (result.monthTotal / result.monthlyBudget) * 100
+      );
+      toast.warning(`⚠️ You used ${percent}% of your budget`);
     }
-  };
+
+    setFormData({
+      title: "",
+      amount: "",
+      category: "Food",
+      paymentMethod: "UPI",
+      date: new Date().toISOString().split("T")[0],
+    });
+    setAiInput("");
+  } catch {
+    toast.error("Failed to save expense");
+  }
+};
+
 
   return (
     <div className="flex flex-col gap-6 md:gap-8">

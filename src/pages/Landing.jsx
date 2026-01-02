@@ -1,4 +1,8 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../services/firebase";
+
 import {
   Sparkles,
   BarChart3,
@@ -9,6 +13,19 @@ import {
 } from "lucide-react";
 
 export default function Landing() {
+  const navigate = useNavigate();
+
+  // ✅ AUTO REDIRECT IF USER IS ALREADY LOGGED IN
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        navigate("/dashboard", { replace: true });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [navigate]);
+
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
 
@@ -65,7 +82,6 @@ export default function Landing() {
             <span className="font-black text-slate-800">Finora</span>.
           </p>
 
-        
         </div>
       </section>
 
@@ -174,53 +190,31 @@ export default function Landing() {
           </div>
 
           {/* RIGHT MINI CARDS */}
-       <div className="grid grid-cols-2 gap-6">
-  {[
-    {
-      title: "AI Powered",
-      desc: "Smart insights",
-      icon: Sparkles,
-    },
-    {
-      title: "Secure",
-      desc: "Encrypted data",
-      icon: ShieldCheck,
-    },
-    {
-      title: "Analytics",
-      desc: "Visual reports",
-      icon: BarChart3,
-    },
-    {
-      title: "Fast",
-      desc: "Real-time updates",
-      icon: Zap,
-    },
-  ].map(({ title, desc, icon: Icon }) => (
-    <div
-      key={title}
-      className="group rounded-[2.5rem] thin-glass p-8 shadow-xl backdrop-blur-[160px] transition-all hover:-translate-y-1"
-    >
-      {/* Icon */}
-      <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600/10 text-blue-600">
-        <Icon size={22} strokeWidth={2.2} />
-      </div>
+          <div className="grid grid-cols-2 gap-6">
+            {[
+              { title: "AI Powered", desc: "Smart insights", icon: Sparkles },
+              { title: "Secure", desc: "Encrypted data", icon: ShieldCheck },
+              { title: "Analytics", desc: "Visual reports", icon: BarChart3 },
+              { title: "Fast", desc: "Real-time updates", icon: Zap },
+            ].map(({ title, desc, icon: Icon }) => (
+              <div
+                key={title}
+                className="group rounded-[2.5rem] thin-glass p-8 shadow-xl backdrop-blur-[160px] transition-all hover:-translate-y-1"
+              >
+                <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600/10 text-blue-600">
+                  <Icon size={22} strokeWidth={2.2} />
+                </div>
 
-      {/* Shiny Title */}
-      <h4 className="text-lg font-black bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent">
-        {title}
-      </h4>
+                <h4 className="text-lg font-black bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent">
+                  {title}
+                </h4>
 
-      {/* Description */}
-      <p className="mt-2 text-slate-500 font-semibold">
-        {desc}
-      </p>
-    </div>
-  ))}
-</div>
-
-
-
+                <p className="mt-2 text-slate-500 font-semibold">
+                  {desc}
+                </p>
+              </div>
+            ))}
+          </div>
 
         </div>
       </section>

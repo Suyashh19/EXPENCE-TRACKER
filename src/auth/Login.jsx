@@ -1,34 +1,50 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { loginUser, loginWithGoogle } from "../services/authService";
 import { useNavigate, Link } from "react-router-dom";
 import { Mail, Lock } from "lucide-react";
-import { ToastContainer, toast } from 'react-toastify';
+import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../services/firebase";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const navigate = useNavigate();
+  const [checkingSession, setCheckingSession] = useState(true);
+const navigate = useNavigate();
+
+useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, (user) => {
+    if (user) {
+      // ✅ User already logged in → go to dashboard
+      navigate("/dashboard", { replace: true });
+    } else {
+      // ❌ No session → allow login page to render
+      setCheckingSession(false);
+    }
+  });
+
+  return () => unsubscribe();
+}, [navigate]);
+
 
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
       await loginUser(email, password);
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       toast.error(err.message || "Some error occurred", {
         className: "error-toast",
         bodyClassName: "error-toast-body",
       });
-
     }
   };
 
   const handleGoogleLogin = async () => {
     try {
       await loginWithGoogle();
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       toast.error(err.message || "Some error occurred", {
         className: "error-toast",
@@ -36,6 +52,15 @@ export default function Login() {
       });
     }
   };
+
+  // ⏳ WAIT UNTIL SESSION CHECK COMPLETES
+  if (checkingSession) {
+    return (
+      <div className="flex min-h-screen items-center justify-center font-bold text-slate-600">
+        Restoring session...
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center px-6">
@@ -65,10 +90,7 @@ export default function Login() {
 
           {/* Email */}
           <div className="relative">
-            <Mail
-              size={18}
-              className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400"
-            />
+            <Mail size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="email"
               placeholder="Email address"
@@ -81,10 +103,7 @@ export default function Login() {
 
           {/* Password */}
           <div className="relative">
-            <Lock
-              size={18}
-              className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400"
-            />
+            <Lock size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="password"
               placeholder="Password"
@@ -107,9 +126,7 @@ export default function Login() {
         {/* Divider */}
         <div className="my-6 flex items-center gap-4">
           <div className="h-px flex-1 bg-white/40"></div>
-          <span className="text-xs font-bold text-slate-400 uppercase">
-            or
-          </span>
+          <span className="text-xs font-bold text-slate-400 uppercase">or</span>
           <div className="h-px flex-1 bg-white/40"></div>
         </div>
 
@@ -118,28 +135,23 @@ export default function Login() {
           onClick={handleGoogleLogin}
           className="w-full flex items-center justify-center gap-3 rounded-2xl border border-white/60 bg-white/20 py-4 text-lg font-black text-slate-800 shadow-xl backdrop-blur-md hover:bg-white/30 hover:scale-[1.01] transition"
         >
-          {/* Google Logo */}
           <svg width="22" height="22" viewBox="0 0 48 48">
             <path fill="#EA4335" d="M24 9.5c3.3 0 6.3 1.1 8.6 3.2l6.4-6.4C34.8 2.5 29.7 0 24 0 14.6 0 6.6 5.4 2.7 13.2l7.5 5.8C12.3 13.2 17.7 9.5 24 9.5z" />
             <path fill="#4285F4" d="M46.1 24.6c0-1.6-.1-2.8-.4-4H24v7.6h12.7c-.3 2-1.6 5-4.6 7l7.1 5.5c4.1-3.8 6.9-9.3 6.9-16.1z" />
             <path fill="#FBBC05" d="M10.2 28.9c-.5-1.4-.8-2.9-.8-4.4s.3-3 .8-4.4l-7.5-5.8C.9 17.5 0 20.7 0 24s.9 6.5 2.7 9.7l7.5-5.8z" />
             <path fill="#34A853" d="M24 48c5.7 0 10.5-1.9 14-5.1l-7.1-5.5c-1.9 1.3-4.5 2.2-6.9 2.2-6.3 0-11.7-3.7-13.8-9.1l-7.5 5.8C6.6 42.6 14.6 48 24 48z" />
           </svg>
-
           <span>Continue with Google</span>
         </button>
-
 
         {/* Footer */}
         <p className="mt-8 text-center text-sm font-semibold text-slate-600">
           New user?{" "}
-          <Link
-            to="/register"
-            className="font-black text-blue-600 hover:underline"
-          >
+          <Link to="/register" className="font-black text-blue-600 hover:underline">
             Register
           </Link>
         </p>
+
         <ToastContainer />
       </div>
     </div>
