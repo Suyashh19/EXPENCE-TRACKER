@@ -7,7 +7,10 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [preferredCurrency, setPreferredCurrency] = useState("INR"); // 🔥 STEP-1
+
+  // 🔥 GLOBAL CURRENCY STATE
+  const [preferredCurrency, setPreferredCurrency] = useState("INR");
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -15,10 +18,16 @@ export const AuthProvider = ({ children }) => {
       setUser(firebaseUser);
 
       if (firebaseUser) {
-        // 🔥 STEP-1: load currency once after login
-        const currency = await getPreferredCurrency();
-        setPreferredCurrency(currency || "INR");
+        // 🔁 Load preferred currency once on login
+        try {
+          const currency = await getPreferredCurrency();
+          setPreferredCurrency(currency || "INR");
+        } catch (err) {
+          console.error("Failed to load preferred currency", err);
+          setPreferredCurrency("INR");
+        }
       } else {
+        // Reset on logout
         setPreferredCurrency("INR");
       }
 
@@ -32,8 +41,11 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider
       value={{
         user,
-        preferredCurrency,
         loading,
+
+        // ✅ expose both state + setter
+        preferredCurrency,
+        setPreferredCurrency,
       }}
     >
       {children}

@@ -7,10 +7,13 @@ import {
   getPreferredCurrency,
   updatePreferredCurrency,
 } from "../../services/userService";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Preferences() {
+  const { preferredCurrency, setPreferredCurrency } = useAuth();
+
   const [monthlyBudget, setMonthlyBudget] = useState("");
-  const [preferredCurrency, setPreferredCurrency] = useState("INR");
+  const [localCurrency, setLocalCurrency] = useState("INR");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -23,7 +26,7 @@ export default function Preferences() {
         setMonthlyBudget(prefs.monthlyBudget);
       }
 
-      setPreferredCurrency(currency || "INR");
+      setLocalCurrency(currency || preferredCurrency || "INR");
       setLoading(false);
     };
 
@@ -33,13 +36,16 @@ export default function Preferences() {
   const handleSave = async () => {
     setSaving(true);
 
-    // existing logic (unchanged)
+    // ✅ existing logic (unchanged)
     await updateUserPreferences({
       monthlyBudget: Number(monthlyBudget),
     });
 
-    // 🔥 currency preference save
-    await updatePreferredCurrency(preferredCurrency);
+    // ✅ save currency to Firestore
+    await updatePreferredCurrency(localCurrency);
+
+    // 🔥 CRITICAL FIX: update GLOBAL context
+    setPreferredCurrency(localCurrency);
 
     setSaving(false);
     alert("Preferences saved");
@@ -69,14 +75,14 @@ export default function Preferences() {
         />
       </div>
 
-      {/* 🔥 Currency Preference (NEW – minimal & safe UI) */}
+      {/* Preferred Currency */}
       <div className="space-y-2">
         <label className="text-xs font-black uppercase tracking-widest text-slate-400">
           Preferred Currency
         </label>
         <select
-          value={preferredCurrency}
-          onChange={(e) => setPreferredCurrency(e.target.value)}
+          value={localCurrency}
+          onChange={(e) => setLocalCurrency(e.target.value)}
           className="w-full rounded-2xl border border-white/60 bg-white/20 px-5 py-3 outline-none"
         >
           <option value="INR">INR (₹)</option>
