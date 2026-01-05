@@ -265,33 +265,45 @@ Average of past three months: ${formatCurrency(statsData.averageMonth, preferred
             <h3 className="text-xl md:text-2xl font-black">
               Expenses Analysis
             </h3>
+<div className="flex gap-2">
+  <select
+    value={selectedYear}
+    onChange={(e) => setSelectedYear(Number(e.target.value))}
+    className="rounded-2xl px-5 py-2.5 text-sm font-semibold
+               bg-white/40 backdrop-blur-md
+               border border-white/60
+               shadow-md shadow-black/5
+               text-slate-700
+               hover:bg-white/60
+               focus:outline-none focus:ring-2 focus:ring-blue-500/40
+               transition-all"
+  >
+    {availableYears.map((year) => (
+      <option key={year} value={year}>
+        {year}
+      </option>
+    ))}
+  </select>
 
-            <div className="flex gap-2">
-              {/* YEAR SELECT */}
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="rounded-xl border px-3 py-2 text-sm font-semibold"
-              >
-                {availableYears.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
+  <select
+    value={chartType}
+    onChange={(e) => setChartType(e.target.value)}
+    className="rounded-2xl px-5 py-2.5 text-sm font-semibold
+               bg-white/40 backdrop-blur-md
+               border border-white/60
+               shadow-md shadow-black/5
+               text-slate-700
+               hover:bg-white/60
+               focus:outline-none focus:ring-2 focus:ring-purple-500/40
+               transition-all"
+  >
+    <option value="ColumnChart">Column</option>
+    <option value="LineChart">Line</option>
+    <option value="AreaChart">Area</option>
+    <option value="PieChart">Pie</option>
+  </select>
+</div>
 
-              {/* CHART TYPE */}
-              <select
-                value={chartType}
-                onChange={(e) => setChartType(e.target.value)}
-                className="rounded-xl border px-3 py-2 text-sm"
-              >
-                <option value="ColumnChart">Column</option>
-                <option value="LineChart">Line</option>
-                <option value="AreaChart">Area</option>
-                <option value="PieChart">Pie</option>
-              </select>
-            </div>
           </div>
 
 

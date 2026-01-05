@@ -3,80 +3,84 @@ import Navbar from "../components/Navbar";
 import { expenseAdvisor } from "../services/geminiService";
 import { toast } from "react-toastify";
 import { getUserExpenses } from "../services/expenseService";
+import { getUserPreferences } from "../services/settingsService";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-
-
 export default function Advice() {
-  
   const [expenseSummary, setExpenseSummary] = useState([]);
-  
+  const [preferences, setPreferences] = useState(null);
+
   const fetchExpenses = async () => {
-    setExpenseSummary(await getUserExpenses())
+    setExpenseSummary(await getUserExpenses());
   };
-  
+
   useEffect(() => {
     fetchExpenses();
+
+    const fetchPreferences = async () => {
+      const prefs = await getUserPreferences();
+      setPreferences(prefs);
+    };
+
+    fetchPreferences();
   }, []);
-  
-  //   const [expenseSummary, setExpenseSummary] = useState([]);
-  // console.log(expenseSummary)
-  //   const fetchExpenses = async () => {
-    //     const data = await getUserExpenses();
-    //     setExpenseSummary(data);
-    //     console.log(data)
-    //   };
-    
-    const [messages, setMessages] = useState([
-      {
-        role: "assistant",
-        content: "Hi 👋 I’m your personal finance advisor. Ask me anything about your spending."
-      }
-    ]);
-    
-    const [input, setInput] = useState("");
-    const [loading, setLoading] = useState(false);
-    
-    // 🔹 Build prompt WITH CONTEXT
-    const buildPrompt = () => {
-      return `
-      You are a personal finance advisor chatbot.
-      
-      User expense summary:
-      ${JSON.stringify(expenseSummary, null, 2)}
-      
-      Conversation so far:
-      ${messages
-        .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
-        .join("\n")}
-        
-        User question:
-        "${input}"
-        
-        
-        '`;
-      };
-      const typeAssistantMessage = async (fullText) => {
-        let currentText = "";
-      
-        setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
-      
-        for (let i = 0; i < fullText.length; i++) {
-          currentText += fullText[i];
-      
-          await new Promise((res) => setTimeout(res, 18)); // typing speed
-      
-          setMessages((prev) => {
-            const updated = [...prev];
-            updated[updated.length - 1] = {
-              role: "assistant",
-              content: currentText
-            };
-            return updated;
-          });
-        }
-      };
+
+  const [messages, setMessages] = useState([
+    {
+      role: "assistant",
+      content:
+        "Hi 👋 I’m your personal finance advisor. Ask me anything about your spending.",
+    },
+  ]);
+
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // 🔹 Build prompt WITH CONTEXT (FIXED)
+  const buildPrompt = () => {
+    return `
+You are a personal finance advisor chatbot.
+
+User monthly budget: ₹${preferences?.monthlyBudget || "Not set"}
+User preferred currency: ${preferences?.currency || "INR"}
+
+User expense summary:
+${JSON.stringify(expenseSummary, null, 2)}
+
+Conversation so far:
+${messages
+  .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
+  .join("\n")}
+
+User question:
+"${input}"
+
+Rules:
+- NEVER ask the user for their budget if it is already provided
+- Answer clearly and numerically when possible
+`;
+  };
+
+  const typeAssistantMessage = async (fullText) => {
+    let currentText = "";
+
+    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+
+    for (let i = 0; i < fullText.length; i++) {
+      currentText += fullText[i];
+      await new Promise((res) => setTimeout(res, 18));
+
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: "assistant",
+          content: currentText,
+        };
+        return updated;
+      });
+    }
+  };
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -87,11 +91,8 @@ export default function Advice() {
     setLoading(true);
 
     try {
-      console.log("Hello")
       const response = await expenseAdvisor(buildPrompt());
-
       await typeAssistantMessage(response);
-
     } catch (err) {
       toast.error("Failed to get advice");
       console.error(err);
@@ -105,20 +106,19 @@ export default function Advice() {
       <Navbar />
 
       <div className="flex flex-col flex-1 max-w-4xl mx-auto w-full p-6">
-        {/* Chat Window */}
         <div className="flex-1 overflow-y-auto space-y-4 rounded-3xl bg-white/20 backdrop-blur-md p-6 shadow-xl">
           {messages.map((msg, idx) => (
             <div
               key={idx}
-              className={`max-w-[75%] px-5 py-4 rounded-2xl text-sm leading-relaxed ${msg.role === "user"
+              className={`max-w-[75%] px-5 py-4 rounded-2xl text-sm leading-relaxed ${
+                msg.role === "user"
                   ? "ml-auto bg-blue-600 text-white"
                   : "bg-slate-100 text-slate-900"
-                }`}
+              }`}
             >
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {msg.content}
               </ReactMarkdown>
-
             </div>
           ))}
 
@@ -129,7 +129,6 @@ export default function Advice() {
           )}
         </div>
 
-        {/* Input */}
         <div className="mt-4 flex gap-3">
           <input
             value={input}
