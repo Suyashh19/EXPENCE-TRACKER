@@ -57,15 +57,15 @@ export const getUserExpenses = async () => {
 };
 
 /* ============================
-   ADD EXPENSE (UPDATED – STEP 2)
+   ADD EXPENSE (FIXED DATE BUG)
 ============================ */
 
 export const addExpense = async ({
   title,
   amount,
-  currency = "INR", // 🔥 NEW (safe default)
+  currency = "INR",
   category,
-  date,
+  date, // yyyy-mm-dd (user selected)
   paymentMethod,
 }) => {
   const user = auth.currentUser;
@@ -82,7 +82,7 @@ export const addExpense = async ({
   const monthTotalBefore = getCurrentMonthTotal(
     expensesBefore.map((e) => ({
       ...e,
-      amount: e.amountINR ?? e.amount, // backward compatibility
+      amount: e.amountINR ?? e.amount,
     }))
   );
 
@@ -90,27 +90,27 @@ export const addExpense = async ({
   const amountINR = convertToINR(numericAmount, currency);
   const newMonthTotal = monthTotalBefore + amountINR;
 
-  /* 🚫 HARD BLOCK IF BUDGET EXCEEDED (unchanged) */
-  // if (monthlyBudget > 0 && newMonthTotal > monthlyBudget) {
-  //   throw new Error(
-  //     "Monthly budget exceeded. Please update your budget in Preferences."
-  //   );
-  // }
-
-  /* ✅ SAVE EXPENSE (INR BASED) */
+  /* ✅ SAVE EXPENSE */
   await addDoc(collection(db, "expenses"), {
     title,
-    amountINR,                 // 🔥 BASE VALUE
+    amountINR,                 // base value
     originalAmount: numericAmount,
     originalCurrency: currency,
     category,
     paymentMethod,
+
+    // 🔥 FIX: REAL expense date (used for sorting & UI)
+    expenseDate: Timestamp.fromDate(new Date(date)),
+
+    // 🔒 KEEP string date for dashboard logic (DO NOT TOUCH)
     date,
+
     userId: user.uid,
+
+    // metadata only
     createdAt: Timestamp.now(),
   });
 
-  /* 🔔 RETURN RELIABLE VALUES */
   return {
     monthTotal: newMonthTotal,
     monthlyBudget,
@@ -249,7 +249,7 @@ export const getDashboardStats = async () => {
 };
 
 /* ============================
-   RECENT EXPENSES
+   RECENT EXPENSES (UNCHANGED)
 ============================ */
 
 export const getRecentExpenses = async () => {

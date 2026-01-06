@@ -12,6 +12,26 @@ import {
   formatCurrency,
 } from "../utils/currency";
 
+/* ===================== DATE NORMALIZER (🔥 FIX) ===================== */
+const getExpenseDateObject = (exp) => {
+  // Firestore Timestamp (expenseDate)
+  if (exp.expenseDate?.toDate) {
+    return exp.expenseDate.toDate();
+  }
+
+  // Date string from AddExpense (YYYY-MM-DD)
+  if (typeof exp.date === "string") {
+    return new Date(exp.date + "T00:00:00");
+  }
+
+  // Firestore Timestamp fallback
+  if (exp.createdAt?.toDate) {
+    return exp.createdAt.toDate();
+  }
+
+  return new Date(0); // safe fallback
+};
+
 /* ===================== COMPONENT ===================== */
 
 const Expenses = () => {
@@ -41,6 +61,8 @@ const Expenses = () => {
     setExpenseList((prev) => prev.filter((e) => e.id !== id));
   };
 
+  /* ===================== FILTER + SORT (🔥 FIXED) ===================== */
+
   const filteredExpenses = expenseList
     .filter((exp) => {
       const matchesSearch = exp.title
@@ -52,11 +74,12 @@ const Expenses = () => {
 
       return matchesSearch && matchesCategory;
     })
-    .sort((a, b) =>
-      sortOrder === "newest"
-        ? b.createdAt?.seconds - a.createdAt?.seconds
-        : a.createdAt?.seconds - b.createdAt?.seconds
-    );
+    .sort((a, b) => {
+      const aTime = getExpenseDateObject(a).getTime();
+      const bTime = getExpenseDateObject(b).getTime();
+
+      return sortOrder === "newest" ? bTime - aTime : aTime - bTime;
+    });
 
   /* ===================== SUMMARY (INR BASE) ===================== */
 
@@ -68,9 +91,7 @@ const Expenses = () => {
   const transactionCount = filteredExpenses.length;
 
   const averageAmountINR =
-    transactionCount > 0
-      ? totalAmountINR / transactionCount
-      : 0;
+    transactionCount > 0 ? totalAmountINR / transactionCount : 0;
 
   /* ===================== STYLES ===================== */
 
@@ -94,6 +115,8 @@ const Expenses = () => {
     };
     return styles[method] || styles.Other;
   };
+
+  /* ===================== RENDER ===================== */
 
   return (
     <div className="flex flex-col gap-6 md:gap-8">
@@ -163,55 +186,6 @@ const Expenses = () => {
           <Summary label="Transactions" value={transactionCount} />
         </div>
 
-        {/* MOBILE CARDS */}
-        <div className="md:hidden space-y-4">
-          {filteredExpenses.map((exp) => {
-            const payment = normalizePaymentMethod(exp.paymentMethod);
-            const amountINR = getAmountINR(exp);
-
-            return (
-              <div
-                key={exp.id}
-                className="rounded-2xl border border-white/40 p-4 bg-white/10"
-              >
-                <div className="flex justify-between mb-2">
-                  <p className="font-black">{exp.title}</p>
-                  <p className="font-black text-emerald-600">
-                    -{formatCurrency(amountINR, preferredCurrency)}
-                  </p>
-                </div>
-
-                <div className="flex justify-between items-center text-xs">
-                  <div className="flex gap-2">
-                    <span
-                      className={`px-3 py-1 rounded-full border font-black uppercase ${getCategoryStyle(
-                        exp.category
-                      )}`}
-                    >
-                      {exp.category}
-                    </span>
-
-                    <span
-                      className={`px-3 py-1 rounded-full font-black ${getPaymentStyle(
-                        payment
-                      )}`}
-                    >
-                      {payment}
-                    </span>
-                  </div>
-
-                  <button
-                    onClick={() => handleDelete(exp.id)}
-                    className="text-rose-500 font-bold"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
         {/* DESKTOP TABLE */}
         <div className="hidden md:block">
           <table className="w-full text-left border-collapse">
@@ -242,11 +216,12 @@ const Expenses = () => {
               {filteredExpenses.map((exp) => {
                 const payment = normalizePaymentMethod(exp.paymentMethod);
                 const amountINR = getAmountINR(exp);
+                const dateObj = getExpenseDateObject(exp);
 
                 return (
                   <tr key={exp.id} className="hover:bg-white/20">
                     <td className="py-5 pl-4 text-sm text-slate-500">
-                      {exp.createdAt?.toDate().toLocaleDateString()}
+                      {dateObj.toLocaleDateString()}
                     </td>
                     <td className="py-5 font-semibold">{exp.title}</td>
                     <td className="py-5">
