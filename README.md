@@ -22,7 +22,6 @@ The platform supports real-time data storage using Firebase Firestore, secure au
 - **Transaction History**: View and delete previous transactions  
 - **Secure Authentication**: User login using Firebase Authentication  
 - **Real-time Updates**: Instant UI updates after adding or deleting expenses  
-- **Responsive Design**: Optimized for all screen sizes  
 - **Clean UI/UX**: Modern glassmorphism-based interface  
 - **Cloud Data Storage**: Expense data securely stored using Firebase Firestore   
 - **Session Persistence**: Users remain logged in across page refreshes     
@@ -60,7 +59,8 @@ This project leverages the following technologies:
 
 🔗 **Live Demo:**  
 
-https://expense-tracker-1869c.web.app
+[https://expense-tracker-1869c.web.app](https://expense-tracker-1869c.web.app)
+
 
 ---
 
