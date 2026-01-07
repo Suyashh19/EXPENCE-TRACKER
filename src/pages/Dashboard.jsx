@@ -70,8 +70,8 @@ export default function Dashboard() {
 
   const buildChartData = (allExpenses, year) => {
     const months = [
-      "Jan","Feb","Mar","Apr","May","Jun",
-      "Jul","Aug","Sep","Oct","Nov","Dec",
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
     ];
 
     const totalForMonthINR = (month) =>
@@ -150,7 +150,7 @@ Average of past three months: ${formatCurrency(statsData.averageMonth, preferred
       try {
         const result = await getAiInsight(context);
         setInsight(result);
-      } catch {}
+      } catch { }
     };
 
     runAI();
@@ -205,10 +205,28 @@ Average of past three months: ${formatCurrency(statsData.averageMonth, preferred
 
       {/* STATS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
-        <StatCard
-          label="Spent This Month"
-          value={formatCurrency(statsData.monthTotal, preferredCurrency)}
-        />
+        <div className="rounded-3xl md:rounded-[3.5rem] thin-glass p-6 md:p-10">
+          <p className="text-xs font-black uppercase tracking-widest text-slate-400">
+            Spent This Month
+          </p>
+
+          <h3 className="mt-4 text-3xl md:text-4xl font-black text-slate-900">
+            {formatCurrency(statsData.monthTotal, preferredCurrency)}
+          </h3>
+
+          {monthComparison && (
+            <p
+              className={`mt-3 text-sm font-black ${monthComparison.percentageChange < 0
+                  ? "text-emerald-600"
+                  : "text-rose-500"
+                }`}
+            >
+              {monthComparison.percentageChange < 0 ? "▼" : "▲"}{" "}
+              {Math.abs(monthComparison.percentageChange)}%
+            </p>
+          )}
+        </div>
+
         <StatCard
           label="Today's Expenses"
           value={formatCurrency(statsData.todayTotal, preferredCurrency)}
@@ -221,19 +239,6 @@ Average of past three months: ${formatCurrency(statsData.averageMonth, preferred
           <h3 className="mt-4 text-3xl md:text-4xl font-black text-slate-900">
             {formatCurrency(statsData.averageMonth, preferredCurrency)}
           </h3>
-
-          {monthComparison && (
-            <p
-              className={`mt-3 text-sm font-black ${
-                monthComparison.percentageChange < 0
-                  ? "text-emerald-600"
-                  : "text-rose-500"
-              }`}
-            >
-              {monthComparison.percentageChange < 0 ? "▼" : "▲"}{" "}
-              {Math.abs(monthComparison.percentageChange)}%
-            </p>
-          )}
         </div>
       </div>
 
