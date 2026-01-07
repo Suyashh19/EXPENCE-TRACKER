@@ -142,3 +142,34 @@ body {
   background: rgba(0, 0, 0, 0.1);
   border-radius: 10px;
 }
+
+/* ===================== */
+/* GLOBAL RESPONSIVE FIX */
+/* ===================== */
+
+/* iOS / Android safe area (bottom nav) */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Prevent accidental horizontal scroll on mobile */
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Hide scrollbar (used in mobile bottom nav) */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* Improve touch interaction on mobile */
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
