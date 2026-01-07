@@ -4,7 +4,7 @@ import {
   exportUserData,
   deleteAccount,
 } from "../../services/dataPrivacyService";
-import { toast , ToastContainer } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 
 export default function DataPrivacy() {
   const user = auth.currentUser;
@@ -35,7 +35,7 @@ export default function DataPrivacy() {
     try {
       setLoading(true);
       await deleteAccount(password);
-      toast.success("Account deleted permanently",{
+      toast.success("Account deleted permanently", {
         className: "glass-success-toast",
       });
       window.location.href = "/";
@@ -47,44 +47,75 @@ export default function DataPrivacy() {
   };
 
   return (
-    <div className="space-y-8">
-
+    <div className="space-y-8 px-4 sm:px-0 max-w-xl">
       {/* EXPORT */}
-      <div>
-        <h3 className="text-lg font-black">Export Data</h3>
-        <p className="text-sm text-slate-500 mb-4">
+      <div className="space-y-3">
+        <h3 className="text-lg sm:text-xl font-black text-slate-900">
+          Export Data
+        </h3>
+        <p className="text-sm text-slate-500">
           Download all your data in JSON format.
         </p>
+
         <button
           onClick={handleExport}
-          className="rounded-xl bg-blue-600 px-6 py-3 font-bold text-white"
+          className="
+            w-full sm:w-auto
+            rounded-xl
+            bg-blue-600
+            px-6
+            py-3
+            font-bold
+            text-white
+            shadow-lg
+            hover:scale-[1.02]
+            transition
+          "
         >
           Download My Data
         </button>
       </div>
 
       {/* DELETE ACCOUNT */}
-      <div className="pt-6 border-t border-white/30">
-        <h3 className="text-lg font-black text-rose-600">
+      <div className="pt-6 border-t border-white/30 space-y-4">
+        <h3 className="text-lg sm:text-xl font-black text-rose-600">
           Delete Account
         </h3>
-        <p className="text-sm text-slate-500 mb-4">
+        <p className="text-sm text-slate-500">
           This will permanently delete your account and all data.
         </p>
 
         {!showWarning && (
           <button
             onClick={() => setShowWarning(true)}
-            className="rounded-xl bg-rose-600 px-6 py-3 font-bold text-white"
+            className="
+              w-full sm:w-auto
+              rounded-xl
+              bg-rose-600
+              px-6
+              py-3
+              font-bold
+              text-white
+              shadow-lg
+            "
           >
             Delete Account
           </button>
         )}
 
         {showWarning && (
-          <div className="mt-4 space-y-4 rounded-xl border border-rose-300 bg-rose-50 p-4">
+          <div
+            className="
+              space-y-4
+              rounded-2xl
+              border
+              border-rose-300
+              bg-rose-50
+              p-4 sm:p-6
+            "
+          >
             <p className="text-sm font-bold text-rose-600">
-              This action is irreversible.
+              ⚠️ This action is irreversible.
             </p>
 
             {provider === "password" && (
@@ -93,20 +124,41 @@ export default function DataPrivacy() {
                 placeholder="Confirm password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl p-3"
+                className="
+                  w-full
+                  rounded-xl
+                  border
+                  border-rose-200
+                  px-4
+                  py-3
+                  outline-none
+                  focus:ring-2
+                  focus:ring-rose-400/50
+                "
               />
             )}
 
             <button
               onClick={handleDelete}
               disabled={loading}
-              className="rounded-xl bg-rose-600 px-6 py-3 font-bold text-white"
+              className="
+                w-full sm:w-auto
+                rounded-xl
+                bg-rose-600
+                px-6
+                py-3
+                font-bold
+                text-white
+                shadow-lg
+                disabled:opacity-50
+              "
             >
-              Permanently Delete
+              {loading ? "Deleting..." : "Permanently Delete"}
             </button>
           </div>
         )}
       </div>
+
       <ToastContainer />
     </div>
   );

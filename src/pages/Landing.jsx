@@ -15,7 +15,6 @@ import {
 export default function Landing() {
   const navigate = useNavigate();
 
-  // ✅ AUTO REDIRECT IF USER IS ALREADY LOGGED IN
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -27,7 +26,7 @@ export default function Landing() {
   }, [navigate]);
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden">
+    <div className="relative min-h-[100dvh] w-full overflow-hidden">
 
       {/* 🌍 GLASS BACKGROUND */}
       <div className="glass-world fixed inset-0 -z-10">
@@ -36,26 +35,26 @@ export default function Landing() {
       </div>
 
       {/* ================= NAVBAR ================= */}
-      <header className="mx-8 mt-6 rounded-[2.5rem] thin-glass px-10 py-6 flex items-center justify-between backdrop-blur-[140px]">
+      <header className="mx-4 sm:mx-8 mt-4 sm:mt-6 rounded-3xl sm:rounded-[2.5rem] thin-glass px-4 sm:px-10 py-4 sm:py-6 flex flex-col sm:flex-row items-center justify-between gap-4 backdrop-blur-[140px]">
         <div className="flex items-center gap-4">
           <div className="h-10 w-10 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg">
             <div className="h-4 w-4 bg-white rotate-45 rounded-sm"></div>
           </div>
-          <h1 className="text-xl font-black tracking-tight text-slate-900">
+          <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900">
             Finora
           </h1>
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex gap-3">
           <Link
             to="/login"
-            className="px-6 py-2 rounded-xl font-bold text-slate-700 hover:bg-white/40 transition"
+            className="px-5 py-2 rounded-xl font-bold text-slate-700 hover:bg-white/40 transition"
           >
             Login
           </Link>
           <Link
             to="/register"
-            className="px-6 py-2 rounded-xl bg-blue-600 text-white font-black shadow-lg"
+            className="px-5 py-2 rounded-xl bg-blue-600 text-white font-black shadow-lg"
           >
             Get Started
           </Link>
@@ -63,73 +62,48 @@ export default function Landing() {
       </header>
 
       {/* ================= HERO ================= */}
-      <section className="mt-28 flex justify-center px-6">
-        <div className="max-w-4xl w-full rounded-[3.5rem] thin-glass p-16 text-center shadow-2xl backdrop-blur-[160px]">
+      <section className="mt-20 sm:mt-28 flex justify-center px-4 sm:px-6">
+        <div className="max-w-4xl w-full rounded-3xl sm:rounded-[3.5rem] thin-glass p-8 sm:p-16 text-center shadow-2xl backdrop-blur-[160px]">
 
-          <span className="inline-flex items-center gap-2 mb-6 rounded-full bg-blue-600/10 px-6 py-2 text-xs font-black uppercase tracking-widest text-blue-600">
+          <span className="inline-flex items-center gap-2 mb-6 rounded-full bg-blue-600/10 px-5 py-2 text-[10px] sm:text-xs font-black uppercase tracking-widest text-blue-600">
             <Sparkles size={14} />
             AI-Powered Financial Management
           </span>
 
-          <h2 className="text-5xl font-black tracking-tight text-slate-900">
+          <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-slate-900">
             Take Control of Your <br />
             <span className="text-blue-600">Financial Future</span>
           </h2>
 
-          <p className="mt-6 text-lg font-semibold text-slate-500 max-w-2xl mx-auto">
+          <p className="mt-6 text-sm sm:text-lg font-semibold text-slate-500 max-w-2xl mx-auto">
             Track expenses effortlessly, gain AI-powered insights, and make
             smarter financial decisions with{" "}
             <span className="font-black text-slate-800">Finora</span>.
           </p>
-
         </div>
       </section>
 
       {/* ================= FEATURES ================= */}
-      <section className="mt-36 px-24">
-        <h3 className="text-4xl font-black text-center text-slate-900">
+      <section className="mt-24 sm:mt-36 px-4 sm:px-24">
+        <h3 className="text-2xl sm:text-4xl font-black text-center text-slate-900">
           Powerful Features
         </h3>
         <p className="mt-4 text-center text-slate-500 font-semibold">
           Everything you need to manage your finances effectively
         </p>
 
-        <div className="mt-16 grid grid-cols-3 gap-8">
+        <div className="mt-12 sm:mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {[
-            {
-              icon: Sparkles,
-              title: "AI-Powered Insights",
-              desc: "Smart recommendations & financial guidance",
-            },
-            {
-              icon: BarChart3,
-              title: "Advanced Analytics",
-              desc: "Visual spending breakdowns & trends",
-            },
-            {
-              icon: ShieldCheck,
-              title: "Secure & Private",
-              desc: "Bank-level encryption for your data",
-            },
-            {
-              icon: Zap,
-              title: "Real-time Tracking",
-              desc: "Instant expense updates as you spend",
-            },
-            {
-              icon: Target,
-              title: "Budget Goals",
-              desc: "Set limits and track progress visually",
-            },
-            {
-              icon: PieChart,
-              title: "Category Breakdown",
-              desc: "Understand exactly where money goes",
-            },
+            { icon: Sparkles, title: "AI-Powered Insights", desc: "Smart recommendations & financial guidance" },
+            { icon: BarChart3, title: "Advanced Analytics", desc: "Visual spending breakdowns & trends" },
+            { icon: ShieldCheck, title: "Secure & Private", desc: "Bank-level encryption for your data" },
+            { icon: Zap, title: "Real-time Tracking", desc: "Instant expense updates as you spend" },
+            { icon: Target, title: "Budget Goals", desc: "Set limits and track progress visually" },
+            { icon: PieChart, title: "Category Breakdown", desc: "Understand exactly where money goes" },
           ].map(({ icon: Icon, title, desc }) => (
             <div
               key={title}
-              className="rounded-[2.5rem] thin-glass p-8 shadow-xl backdrop-blur-[140px] hover:-translate-y-1 transition-all"
+              className="rounded-3xl sm:rounded-[2.5rem] thin-glass p-6 sm:p-8 shadow-xl backdrop-blur-[140px] hover:-translate-y-1 transition-all"
             >
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600/10 text-blue-600">
                 <Icon size={22} strokeWidth={2.2} />
@@ -145,13 +119,13 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ================= GLASS CTA ================= */}
-      <section className="mt-40 px-24 pb-24">
-        <div className="rounded-[4rem] thin-glass p-16 shadow-2xl grid grid-cols-2 gap-16 backdrop-blur-[160px]">
+      {/* ================= CTA ================= */}
+      <section className="mt-28 sm:mt-40 px-4 sm:px-24 pb-24">
+        <div className="rounded-3xl sm:rounded-[4rem] thin-glass p-8 sm:p-16 shadow-2xl grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-16 backdrop-blur-[160px]">
 
           {/* LEFT */}
           <div>
-            <h3 className="text-4xl font-black text-slate-900">
+            <h3 className="text-2xl sm:text-4xl font-black text-slate-900">
               Start tracking for free
             </h3>
 
@@ -183,14 +157,14 @@ export default function Landing() {
 
             <Link
               to="/register"
-              className="inline-flex items-center gap-3 mt-10 rounded-2xl bg-blue-600 px-8 py-4 text-white text-lg font-black shadow-xl hover:scale-[1.02] transition"
+              className="inline-flex items-center justify-center gap-3 mt-10 rounded-2xl bg-blue-600 px-8 py-4 text-white text-lg font-black shadow-xl hover:scale-[1.02] transition w-full sm:w-auto"
             >
               Create Free Account →
             </Link>
           </div>
 
           {/* RIGHT MINI CARDS */}
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {[
               { title: "AI Powered", desc: "Smart insights", icon: Sparkles },
               { title: "Secure", desc: "Encrypted data", icon: ShieldCheck },
@@ -199,7 +173,7 @@ export default function Landing() {
             ].map(({ title, desc, icon: Icon }) => (
               <div
                 key={title}
-                className="group rounded-[2.5rem] thin-glass p-8 shadow-xl backdrop-blur-[160px] transition-all hover:-translate-y-1"
+                className="rounded-3xl thin-glass p-6 shadow-xl backdrop-blur-[160px] transition-all hover:-translate-y-1"
               >
                 <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600/10 text-blue-600">
                   <Icon size={22} strokeWidth={2.2} />

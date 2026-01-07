@@ -10,7 +10,7 @@ export default function AddExpense() {
   const [formData, setFormData] = useState({
     title: "",
     amount: "",
-    currency: "INR", // 🔥 STEP-2
+    currency: "INR",
     category: "Food",
     paymentMethod: "UPI",
     date: new Date().toISOString().split("T")[0],
@@ -103,20 +103,19 @@ export default function AddExpense() {
       });
       setAiInput("");
     } catch (err) {
-      console.error(err);
       toast.error("Failed to save expense");
     }
   };
 
   return (
-    <div className="flex flex-col gap-6 md:gap-8">
+    <div className="flex flex-col gap-6 md:gap-8 pb-24 md:pb-10">
       <Navbar />
 
-      <div className="flex justify-center px-4 md:px-0 py-6 md:py-10">
-        <div className="w-full max-w-2xl rounded-3xl md:rounded-[3.5rem] thin-glass p-6 md:p-12 shadow-2xl">
+      <div className="flex justify-center px-4 sm:px-6 md:px-0 py-6 md:py-10">
+        <div className="w-full max-w-2xl rounded-3xl md:rounded-[3.5rem] thin-glass p-6 md:p-12">
           {/* HEADER */}
           <div className="mb-8 text-center">
-            <h2 className="text-2xl md:text-3xl font-black text-slate-900">
+            <h2 className="text-2xl md:text-3xl font-black">
               Add New Expense
             </h2>
             <p className="text-sm md:text-base text-slate-400 font-bold mt-2">
@@ -134,7 +133,8 @@ export default function AddExpense() {
               value={aiInput}
               onChange={(e) => setAiInput(e.target.value)}
               placeholder="e.g. Paid 350 via UPI for food"
-              className="w-full rounded-2xl border bg-white/20 px-4 py-3 text-sm outline-none"
+              rows={3}
+              className="w-full rounded-2xl border bg-white/20 px-4 py-3 text-sm outline-none resize-none"
             />
 
             <button
@@ -165,7 +165,6 @@ export default function AddExpense() {
                 onChange={handleChange}
               />
 
-              {/* 🔥 Currency Selector (NEW) */}
               <Select
                 label="Currency"
                 name="currency"
@@ -239,9 +238,13 @@ const Select = ({ label, options, ...props }) => (
     >
       {options.map((o) =>
         typeof o === "string" ? (
-          <option key={o} value={o}>{o}</option>
+          <option key={o} value={o}>
+            {o}
+          </option>
         ) : (
-          <option key={o.value} value={o.value}>{o.label}</option>
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
         )
       )}
     </select>

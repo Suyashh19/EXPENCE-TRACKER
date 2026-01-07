@@ -185,14 +185,14 @@ export default function Analytics() {
   })();
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-6 md:gap-8 pb-24 md:pb-10">
       <Navbar />
 
-      <div className="rounded-[4rem] thin-glass p-12 shadow-2xl">
+      <div className="rounded-3xl md:rounded-[4rem] thin-glass p-6 md:p-12">
         {/* HEADER */}
-        <div className="flex justify-between items-center mb-10">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
           <div>
-            <h2 className="text-3xl font-black text-slate-900">
+            <h2 className="text-2xl md:text-3xl font-black">
               Financial Growth
             </h2>
             <p className="text-slate-400 font-bold">
@@ -200,12 +200,12 @@ export default function Analytics() {
             </p>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {["daily", "weekly", "monthly"].map((m) => (
               <button
                 key={m}
                 onClick={() => setMode(m)}
-                className={`px-5 py-2 rounded-2xl text-sm font-black ${
+                className={`px-4 py-2 rounded-2xl text-sm font-black ${
                   mode === m
                     ? "bg-blue-600 text-white"
                     : "bg-white/30 border border-white/60 text-slate-600"
@@ -218,7 +218,7 @@ export default function Analytics() {
         </div>
 
         {/* STATS */}
-        <div className="grid grid-cols-3 gap-6 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
           <Stat
             label="Total Spent"
             value={formatCurrency(totalSpentINR, preferredCurrency)}
@@ -234,7 +234,7 @@ export default function Analytics() {
         </div>
 
         {/* TREND */}
-        <div className="h-[300px] mb-12">
+        <div className="h-[260px] md:h-[320px] mb-12">
           <ResponsiveContainer>
             <LineChart data={trendData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -254,19 +254,21 @@ export default function Analytics() {
         </div>
 
         {/* CATEGORY + PAYMENT */}
-        <div className="grid grid-cols-2 gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
           {/* CATEGORY */}
           <div>
-            <h3 className="text-lg font-black mb-4">Spending by Category</h3>
-            <div className="h-[260px]">
+            <h3 className="text-lg font-black mb-4">
+              Spending by Category
+            </h3>
+            <div className="h-[240px] md:h-[260px]">
               <ResponsiveContainer>
                 <PieChart>
                   <Pie
                     data={categoryData}
                     dataKey="value"
                     nameKey="name"
-                    innerRadius={75}
-                    outerRadius={110}
+                    innerRadius={70}
+                    outerRadius={105}
                     paddingAngle={4}
                     stroke="rgba(255,255,255,0.9)"
                     strokeWidth={2}
@@ -275,7 +277,9 @@ export default function Analytics() {
                     {categoryData.map((_, i) => (
                       <Cell
                         key={i}
-                        fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]}
+                        fill={
+                          CATEGORY_COLORS[i % CATEGORY_COLORS.length]
+                        }
                       />
                     ))}
                   </Pie>
@@ -287,8 +291,10 @@ export default function Analytics() {
 
           {/* PAYMENT */}
           <div>
-            <h3 className="text-lg font-black mb-4">Payment Methods</h3>
-            <div className="h-[260px]">
+            <h3 className="text-lg font-black mb-4">
+              Payment Methods
+            </h3>
+            <div className="h-[240px] md:h-[260px]">
               <ResponsiveContainer>
                 <BarChart data={paymentData} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" />
@@ -317,7 +323,9 @@ export default function Analytics() {
 
 const Stat = ({ label, value }) => (
   <div className="rounded-3xl bg-white/20 border border-white/40 p-6">
-    <p className="text-xs font-black uppercase text-slate-400">{label}</p>
+    <p className="text-xs font-black uppercase text-slate-400">
+      {label}
+    </p>
     <p className="text-2xl font-black mt-2">{value}</p>
   </div>
 );

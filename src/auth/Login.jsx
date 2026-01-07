@@ -11,22 +11,19 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [checkingSession, setCheckingSession] = useState(true);
-const navigate = useNavigate();
+  const navigate = useNavigate();
 
-useEffect(() => {
-  const unsubscribe = onAuthStateChanged(auth, (user) => {
-    if (user) {
-      // ✅ User already logged in → go to dashboard
-      navigate("/dashboard", { replace: true });
-    } else {
-      // ❌ No session → allow login page to render
-      setCheckingSession(false);
-    }
-  });
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        navigate("/dashboard", { replace: true });
+      } else {
+        setCheckingSession(false);
+      }
+    });
 
-  return () => unsubscribe();
-}, [navigate]);
-
+    return () => unsubscribe();
+  }, [navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -34,10 +31,7 @@ useEffect(() => {
       await loginUser(email, password);
       navigate("/dashboard", { replace: true });
     } catch (err) {
-      toast.error(err.message || "Some error occurred", {
-        className: "error-toast",
-        bodyClassName: "error-toast-body",
-      });
+      toast.error(err.message || "Some error occurred");
     }
   };
 
@@ -46,14 +40,10 @@ useEffect(() => {
       await loginWithGoogle();
       navigate("/dashboard", { replace: true });
     } catch (err) {
-      toast.error(err.message || "Some error occurred", {
-        className: "error-toast",
-        bodyClassName: "error-toast-body",
-      });
+      toast.error(err.message || "Some error occurred");
     }
   };
 
-  // ⏳ WAIT UNTIL SESSION CHECK COMPLETES
   if (checkingSession) {
     return (
       <div className="flex min-h-screen items-center justify-center font-bold text-slate-600">
@@ -63,7 +53,7 @@ useEffect(() => {
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center px-6">
+    <div className="flex min-h-[100dvh] w-full items-center justify-center px-4 sm:px-6 py-8">
 
       {/* 🌍 Glass Background */}
       <div className="glass-world fixed inset-0 -z-10">
@@ -72,11 +62,11 @@ useEffect(() => {
       </div>
 
       {/* ================= LOGIN CARD ================= */}
-      <div className="w-full max-w-md rounded-[3.5rem] thin-glass p-12 shadow-2xl backdrop-blur-[160px]">
+      <div className="w-full max-w-md rounded-3xl sm:rounded-[3.5rem] thin-glass p-6 sm:p-10 shadow-2xl backdrop-blur-[160px]">
 
         {/* Header */}
-        <div className="text-center mb-10">
-          <h2 className="text-3xl font-black tracking-tight text-slate-900">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
             Login
           </h2>
           <p className="mt-2 text-slate-500 font-semibold">
@@ -86,15 +76,18 @@ useEffect(() => {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleLogin} className="space-y-6">
+        <form onSubmit={handleLogin} className="space-y-5">
 
           {/* Email */}
           <div className="relative">
-            <Mail size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Mail
+              size={18}
+              className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400"
+            />
             <input
               type="email"
               placeholder="Email address"
-              className="w-full rounded-2xl border border-white/60 bg-white/10 px-14 py-4 font-semibold text-slate-800 placeholder:text-slate-400 outline-none backdrop-blur-md focus:ring-2 focus:ring-blue-500/30"
+              className="w-full rounded-2xl border border-white/60 bg-white/10 px-14 py-3.5 sm:py-4 font-semibold text-slate-800 placeholder:text-slate-400 outline-none backdrop-blur-md focus:ring-2 focus:ring-blue-500/30"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -103,11 +96,14 @@ useEffect(() => {
 
           {/* Password */}
           <div className="relative">
-            <Lock size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Lock
+              size={18}
+              className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400"
+            />
             <input
               type="password"
               placeholder="Password"
-              className="w-full rounded-2xl border border-white/60 bg-white/10 px-14 py-4 font-semibold text-slate-800 placeholder:text-slate-400 outline-none backdrop-blur-md focus:ring-2 focus:ring-blue-500/30"
+              className="w-full rounded-2xl border border-white/60 bg-white/10 px-14 py-3.5 sm:py-4 font-semibold text-slate-800 placeholder:text-slate-400 outline-none backdrop-blur-md focus:ring-2 focus:ring-blue-500/30"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -117,7 +113,7 @@ useEffect(() => {
           {/* Login Button */}
           <button
             type="submit"
-            className="w-full rounded-2xl bg-blue-600 py-4 text-lg font-black text-white shadow-xl hover:scale-[1.02] transition"
+            className="w-full rounded-2xl bg-blue-600 py-3.5 sm:py-4 text-base sm:text-lg font-black text-white shadow-xl transition hover:scale-[1.02]"
           >
             Login
           </button>
@@ -126,14 +122,16 @@ useEffect(() => {
         {/* Divider */}
         <div className="my-6 flex items-center gap-4">
           <div className="h-px flex-1 bg-white/40"></div>
-          <span className="text-xs font-bold text-slate-400 uppercase">or</span>
+          <span className="text-xs font-bold text-slate-400 uppercase">
+            or
+          </span>
           <div className="h-px flex-1 bg-white/40"></div>
         </div>
 
         {/* Google Login */}
         <button
           onClick={handleGoogleLogin}
-          className="w-full flex items-center justify-center gap-3 rounded-2xl border border-white/60 bg-white/20 py-4 text-lg font-black text-slate-800 shadow-xl backdrop-blur-md hover:bg-white/30 hover:scale-[1.01] transition"
+          className="w-full flex items-center justify-center gap-3 rounded-2xl border border-white/60 bg-white/20 py-3.5 sm:py-4 text-base sm:text-lg font-black text-slate-800 shadow-xl backdrop-blur-md transition hover:bg-white/30 hover:scale-[1.01]"
         >
           <svg width="22" height="22" viewBox="0 0 48 48">
             <path fill="#EA4335" d="M24 9.5c3.3 0 6.3 1.1 8.6 3.2l6.4-6.4C34.8 2.5 29.7 0 24 0 14.6 0 6.6 5.4 2.7 13.2l7.5 5.8C12.3 13.2 17.7 9.5 24 9.5z" />
@@ -145,9 +143,12 @@ useEffect(() => {
         </button>
 
         {/* Footer */}
-        <p className="mt-8 text-center text-sm font-semibold text-slate-600">
+        <p className="mt-6 text-center text-sm font-semibold text-slate-600">
           New user?{" "}
-          <Link to="/register" className="font-black text-blue-600 hover:underline">
+          <Link
+            to="/register"
+            className="font-black text-blue-600 hover:underline"
+          >
             Register
           </Link>
         </p>

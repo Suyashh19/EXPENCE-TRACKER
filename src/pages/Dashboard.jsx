@@ -37,8 +37,6 @@ import {
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-/* ===================== COMPONENT ===================== */
-
 export default function Dashboard() {
   const { preferredCurrency } = useAuth();
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -58,7 +56,6 @@ export default function Dashboard() {
   ]);
 
   const today = new Date();
-  const currentYear = today.getFullYear();
 
   const pieColors = [
     "#2563eb",
@@ -71,11 +68,10 @@ export default function Dashboard() {
     "#facc15",
   ];
 
-  /* ===================== BUILD CHART DATA (CURRENCY AWARE) ===================== */
   const buildChartData = (allExpenses, year) => {
     const months = [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+      "Jan","Feb","Mar","Apr","May","Jun",
+      "Jul","Aug","Sep","Oct","Nov","Dec",
     ];
 
     const totalForMonthINR = (month) =>
@@ -97,24 +93,18 @@ export default function Dashboard() {
     ]);
   };
 
-  /* ===================== AUTH + DATA LOAD ===================== */
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) return;
 
-      const [
-        allExpenses,
-        stats,
-        recentTx,
-        comparison,
-        prefs,
-      ] = await Promise.all([
-        getUserExpenses(),
-        getDashboardStats(),
-        getRecentExpenses(),
-        compareCurrAndPrev(today.getMonth() + 1, today.getFullYear()),
-        getUserPreferences(),
-      ]);
+      const [allExpenses, stats, recentTx, comparison, prefs] =
+        await Promise.all([
+          getUserExpenses(),
+          getDashboardStats(),
+          getRecentExpenses(),
+          compareCurrAndPrev(today.getMonth() + 1, today.getFullYear()),
+          getUserPreferences(),
+        ]);
 
       setExpenses(allExpenses);
       const years = Array.from(
@@ -127,10 +117,7 @@ export default function Dashboard() {
       ).sort((a, b) => b - a);
 
       setAvailableYears(years);
-
-      if (years.length) {
-        setSelectedYear(years[0]); // latest year
-      }
+      if (years.length) setSelectedYear(years[0]);
 
       setStatsData(stats);
       setRecent(recentTx);
@@ -138,20 +125,18 @@ export default function Dashboard() {
       setPreferences(prefs);
       setDataReady(true);
 
-      buildChartData(allExpenses, selectedYear);
+      buildChartData(allExpenses, years[0]);
     });
 
     return unsubscribe;
   }, []);
 
-  /* 🔁 REBUILD CHART WHEN CURRENCY CHANGES */
   useEffect(() => {
     if (expenses.length) {
       buildChartData(expenses, selectedYear);
     }
   }, [preferredCurrency, selectedYear]);
 
-  /* ===================== AI INSIGHT ===================== */
   useEffect(() => {
     if (!dataReady || !statsData) return;
 
@@ -165,15 +150,12 @@ Average of past three months: ${formatCurrency(statsData.averageMonth, preferred
       try {
         const result = await getAiInsight(context);
         setInsight(result);
-      } catch (err) {
-        console.error("AI Insight failed", err);
-      }
+      } catch {}
     };
 
     runAI();
   }, [dataReady, preferredCurrency]);
 
-  /* ===================== 🔔 NOTIFICATIONS ===================== */
   useEffect(() => {
     if (!statsData || expenses.length === 0 || !preferences) return;
 
@@ -197,15 +179,11 @@ Average of past three months: ${formatCurrency(statsData.averageMonth, preferred
         markDailyReminderShown();
       }
 
-      if (
-        notifications.monthlyBudgetAlert &&
-        preferences.monthlyBudget > 0
-      ) {
+      if (notifications.monthlyBudgetAlert && preferences.monthlyBudget > 0) {
         const percent = getBudgetUsagePercent(
           getCurrentMonthTotal(expenses),
           preferences.monthlyBudget
         );
-
         if (percent >= 80) {
           toast.warning(`⚠️ You have used ${percent}% of your monthly budget`);
         }
@@ -218,14 +196,14 @@ Average of past three months: ${formatCurrency(statsData.averageMonth, preferred
   if (!statsData) return null;
 
   return (
-    <div className="flex flex-col gap-6 md:gap-8">
+    <div className="flex flex-col gap-6 md:gap-8 pb-24 md:pb-10">
       <Navbar
         monthlyBudget={preferences?.monthlyBudget}
         allTotal={statsData.totalAmount}
         totalDays={statsData.totalCalendarDays}
       />
 
-      {/* ===================== STATS ===================== */}
+      {/* STATS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
         <StatCard
           label="Spent This Month"
@@ -246,10 +224,11 @@ Average of past three months: ${formatCurrency(statsData.averageMonth, preferred
 
           {monthComparison && (
             <p
-              className={`mt-3 text-sm font-black ${monthComparison.percentageChange < 0
-                ? "text-emerald-600"
-                : "text-rose-500"
-                }`}
+              className={`mt-3 text-sm font-black ${
+                monthComparison.percentageChange < 0
+                  ? "text-emerald-600"
+                  : "text-rose-500"
+              }`}
             >
               {monthComparison.percentageChange < 0 ? "▼" : "▲"}{" "}
               {Math.abs(monthComparison.percentageChange)}%
@@ -258,65 +237,48 @@ Average of past three months: ${formatCurrency(statsData.averageMonth, preferred
         </div>
       </div>
 
-      {/* ===================== CHART + RECENT ===================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 mb-10">
+      {/* CHART + RECENT */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
         <div className="lg:col-span-2 rounded-3xl md:rounded-[4rem] thin-glass p-6 md:p-12">
-          <div className="flex flex-wrap gap-3 items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between mb-4">
             <h3 className="text-xl md:text-2xl font-black">
               Expenses Analysis
             </h3>
-<div className="flex gap-2">
-  <select
-    value={selectedYear}
-    onChange={(e) => setSelectedYear(Number(e.target.value))}
-    className="rounded-2xl px-5 py-2.5 text-sm font-semibold
-               bg-white/40 backdrop-blur-md
-               border border-white/60
-               shadow-md shadow-black/5
-               text-slate-700
-               hover:bg-white/60
-               focus:outline-none focus:ring-2 focus:ring-blue-500/40
-               transition-all"
-  >
-    {availableYears.map((year) => (
-      <option key={year} value={year}>
-        {year}
-      </option>
-    ))}
-  </select>
 
-  <select
-    value={chartType}
-    onChange={(e) => setChartType(e.target.value)}
-    className="rounded-2xl px-5 py-2.5 text-sm font-semibold
-               bg-white/40 backdrop-blur-md
-               border border-white/60
-               shadow-md shadow-black/5
-               text-slate-700
-               hover:bg-white/60
-               focus:outline-none focus:ring-2 focus:ring-purple-500/40
-               transition-all"
-  >
-    <option value="ColumnChart">Column</option>
-    <option value="LineChart">Line</option>
-    <option value="AreaChart">Area</option>
-    <option value="PieChart">Pie</option>
-  </select>
-</div>
+            <div className="flex flex-wrap gap-2">
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="rounded-2xl px-4 py-2 text-sm font-semibold bg-white/40 backdrop-blur-md border border-white/60"
+              >
+                {availableYears.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
 
+              <select
+                value={chartType}
+                onChange={(e) => setChartType(e.target.value)}
+                className="rounded-2xl px-4 py-2 text-sm font-semibold bg-white/40 backdrop-blur-md border border-white/60"
+              >
+                <option value="ColumnChart">Column</option>
+                <option value="LineChart">Line</option>
+                <option value="AreaChart">Area</option>
+                <option value="PieChart">Pie</option>
+              </select>
+            </div>
           </div>
-
 
           <Chart
             chartType={chartType}
             width="100%"
-            height="220px"
+            height="260px"
             data={chartData}
             options={{
               backgroundColor: "transparent",
-              legend: {
-                position: chartType === "PieChart" ? "right" : "none",
-              },
+              legend: { position: chartType === "PieChart" ? "right" : "none" },
               colors: chartType === "PieChart" ? pieColors : ["#434E78"],
             }}
           />
@@ -329,14 +291,15 @@ Average of past three months: ${formatCurrency(statsData.averageMonth, preferred
 
           <div className="space-y-4">
             {recent.map((item) => (
-              <div key={item.id} className="flex justify-between">
-                <div>
-                  <p className="font-black">{item.title}</p>
+              <div key={item.id} className="flex justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-black truncate">{item.title}</p>
                   <p className="text-xs text-slate-400">
-                    {item.category} • {normalizePaymentMethod(item.paymentMethod)}
+                    {item.category} •{" "}
+                    {normalizePaymentMethod(item.paymentMethod)}
                   </p>
                 </div>
-                <p className="font-black text-emerald-600">
+                <p className="font-black text-emerald-600 whitespace-nowrap">
                   {formatCurrency(getAmountINR(item), preferredCurrency)}
                 </p>
               </div>
@@ -345,7 +308,7 @@ Average of past three months: ${formatCurrency(statsData.averageMonth, preferred
         </div>
       </div>
 
-      {/* ===================== QUICK INSIGHT ===================== */}
+      {/* INSIGHT */}
       <div className="rounded-3xl md:rounded-[4rem] thin-glass p-6 md:p-10">
         <div className="flex items-center gap-2 mb-3">
           <span className="text-xl">💡</span>
@@ -368,7 +331,6 @@ Average of past three months: ${formatCurrency(statsData.averageMonth, preferred
   );
 }
 
-/* ===================== STAT CARD ===================== */
 const StatCard = ({ label, value }) => (
   <div className="rounded-3xl md:rounded-[3.5rem] thin-glass p-6 md:p-10">
     <p className="text-xs font-black uppercase tracking-widest text-slate-400">

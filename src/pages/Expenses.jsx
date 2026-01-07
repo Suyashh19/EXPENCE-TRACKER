@@ -6,33 +6,16 @@ import { getUserExpenses, deleteExpense } from "../services/expenseService";
 import { normalizePaymentMethod } from "../utils/payment";
 import { useAuth } from "../context/AuthContext";
 
-/* ✅ IMPORT FROM SINGLE CURRENCY SOURCE */
-import {
-  getAmountINR,
-  formatCurrency,
-} from "../utils/currency";
+/* ✅ SINGLE CURRENCY SOURCE */
+import { getAmountINR, formatCurrency } from "../utils/currency";
 
-/* ===================== DATE NORMALIZER (🔥 FIX) ===================== */
+/* ===================== DATE NORMALIZER ===================== */
 const getExpenseDateObject = (exp) => {
-  // Firestore Timestamp (expenseDate)
-  if (exp.expenseDate?.toDate) {
-    return exp.expenseDate.toDate();
-  }
-
-  // Date string from AddExpense (YYYY-MM-DD)
-  if (typeof exp.date === "string") {
-    return new Date(exp.date + "T00:00:00");
-  }
-
-  // Firestore Timestamp fallback
-  if (exp.createdAt?.toDate) {
-    return exp.createdAt.toDate();
-  }
-
-  return new Date(0); // safe fallback
+  if (exp.expenseDate?.toDate) return exp.expenseDate.toDate();
+  if (typeof exp.date === "string") return new Date(exp.date + "T00:00:00");
+  if (exp.createdAt?.toDate) return exp.createdAt.toDate();
+  return new Date(0);
 };
-
-/* ===================== COMPONENT ===================== */
 
 const Expenses = () => {
   const navigate = useNavigate();
@@ -61,27 +44,20 @@ const Expenses = () => {
     setExpenseList((prev) => prev.filter((e) => e.id !== id));
   };
 
-  /* ===================== FILTER + SORT (🔥 FIXED) ===================== */
-
   const filteredExpenses = expenseList
     .filter((exp) => {
       const matchesSearch = exp.title
         ?.toLowerCase()
         .includes(searchText.toLowerCase());
-
       const matchesCategory =
         selectedCategory === "All" || exp.category === selectedCategory;
-
       return matchesSearch && matchesCategory;
     })
     .sort((a, b) => {
       const aTime = getExpenseDateObject(a).getTime();
       const bTime = getExpenseDateObject(b).getTime();
-
       return sortOrder === "newest" ? bTime - aTime : aTime - bTime;
     });
-
-  /* ===================== SUMMARY (INR BASE) ===================== */
 
   const totalAmountINR = filteredExpenses.reduce(
     (sum, exp) => sum + getAmountINR(exp),
@@ -89,11 +65,8 @@ const Expenses = () => {
   );
 
   const transactionCount = filteredExpenses.length;
-
   const averageAmountINR =
     transactionCount > 0 ? totalAmountINR / transactionCount : 0;
-
-  /* ===================== STYLES ===================== */
 
   const getCategoryStyle = (cat) => {
     const styles = {
@@ -116,17 +89,15 @@ const Expenses = () => {
     return styles[method] || styles.Other;
   };
 
-  /* ===================== RENDER ===================== */
-
   return (
-    <div className="flex flex-col gap-6 md:gap-8">
+    <div className="flex flex-col gap-6 md:gap-8 pb-24 md:pb-10">
       <Navbar />
 
-      <div className="rounded-3xl md:rounded-[3.5rem] thin-glass p-6 md:p-10 shadow-2xl">
+      <div className="rounded-3xl md:rounded-[3.5rem] thin-glass p-6 md:p-10">
         {/* HEADER */}
         <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h2 className="text-xl md:text-2xl font-black text-slate-900">
+            <h2 className="text-xl md:text-2xl font-black">
               Expense List
             </h2>
             <p className="text-sm text-slate-400">
@@ -136,7 +107,7 @@ const Expenses = () => {
 
           <button
             onClick={() => navigate("/add")}
-            className="rounded-xl bg-emerald-500 px-5 py-2 text-sm font-semibold text-white"
+            className="rounded-xl bg-emerald-500 px-5 py-2 text-sm font-semibold text-white w-full md:w-auto"
           >
             Add Expense
           </button>
@@ -184,6 +155,61 @@ const Expenses = () => {
             value={formatCurrency(averageAmountINR, preferredCurrency)}
           />
           <Summary label="Transactions" value={transactionCount} />
+        </div>
+
+        {/* MOBILE CARDS */}
+        <div className="md:hidden space-y-4">
+          {filteredExpenses.map((exp) => {
+            const payment = normalizePaymentMethod(exp.paymentMethod);
+            const amountINR = getAmountINR(exp);
+            const dateObj = getExpenseDateObject(exp);
+
+            return (
+              <div
+                key={exp.id}
+                className="rounded-2xl border border-white/40 p-4 bg-white/30"
+              >
+                <div className="flex justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-black truncate">{exp.title}</p>
+                    <p className="text-xs text-slate-400">
+                      {dateObj.toLocaleDateString()}
+                    </p>
+                  </div>
+
+                  <p className="font-black text-emerald-600 whitespace-nowrap">
+                    -{formatCurrency(amountINR, preferredCurrency)}
+                  </p>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between">
+                  <div className="flex gap-2">
+                    <span
+                      className={`px-3 py-1 rounded-full text-[10px] font-black uppercase border ${getCategoryStyle(
+                        exp.category
+                      )}`}
+                    >
+                      {exp.category}
+                    </span>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-black ${getPaymentStyle(
+                        payment
+                      )}`}
+                    >
+                      {payment}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => handleDelete(exp.id)}
+                    className="text-rose-500 text-xs font-bold"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* DESKTOP TABLE */}

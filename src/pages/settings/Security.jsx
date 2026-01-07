@@ -4,7 +4,7 @@ import {
   changePassword,
   sendResetLink,
 } from "../../services/securityService";
-import { toast,ToastContainer } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 
 export default function Security() {
   const user = auth.currentUser;
@@ -17,12 +17,14 @@ export default function Security() {
   // 🔹 GOOGLE USERS
   if (provider === "google.com") {
     return (
-      <div className="space-y-4">
-        <h3 className="text-xl font-black">Account Security</h3>
+      <div className="space-y-4 px-4 sm:px-0">
+        <h3 className="text-lg sm:text-xl font-black">
+          Account Security
+        </h3>
         <p className="text-slate-500 font-bold">
           You signed in using Google.
         </p>
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-slate-400 leading-relaxed">
           Password is managed by Google. Please change it from your Google
           account.
         </p>
@@ -35,7 +37,7 @@ export default function Security() {
     try {
       setLoading(true);
       await changePassword(currentPassword, newPassword);
-      toast.success("Password updated successfully",{
+      toast.success("Password updated successfully", {
         className: "glass-success-toast",
       });
       setCurrentPassword("");
@@ -57,41 +59,75 @@ export default function Security() {
   };
 
   return (
-    <div className="space-y-6">
-      <h3 className="text-xl font-black">Change Password</h3>
+    <div className="space-y-6 px-4 sm:px-0 max-w-xl">
+      <h3 className="text-lg sm:text-xl font-black">
+        Change Password
+      </h3>
 
+      {/* CURRENT PASSWORD */}
       <input
         type="password"
         placeholder="Current Password"
         value={currentPassword}
         onChange={(e) => setCurrentPassword(e.target.value)}
-        className="w-full rounded-xl p-4 border border-gray-500"
+        className="
+          w-full
+          rounded-xl
+          px-4 sm:px-5
+          py-3.5
+          border border-gray-500
+          outline-none
+        "
       />
 
+      {/* NEW PASSWORD */}
       <input
         type="password"
         placeholder="New Password"
         value={newPassword}
         onChange={(e) => setNewPassword(e.target.value)}
-        className="w-full rounded-xl p-4 border border-gray-500"
+        className="
+          w-full
+          rounded-xl
+          px-4 sm:px-5
+          py-3.5
+          border border-gray-500
+          outline-none
+        "
       />
 
+      {/* UPDATE BUTTON */}
       <button
         onClick={handleChangePassword}
         disabled={loading}
-        className="rounded-xl bg-blue-600 px-6 py-3 font-bold text-white"
+        className="
+          w-full sm:w-auto
+          rounded-xl
+          bg-blue-600
+          px-6
+          py-3.5
+          font-bold
+          text-white
+          transition
+          hover:scale-105
+          active:scale-95
+          disabled:opacity-50
+        "
       >
-        Update Password
+        {loading ? "Updating..." : "Update Password"}
       </button>
 
+      {/* RESET */}
       <div className="pt-4 border-t border-white/30">
         <button
           onClick={handleReset}
-          className="text-sm font-bold text-blue-600"
+          className="text-sm font-bold text-blue-600 hover:underline"
         >
           Forgot password? Send reset email
         </button>
       </div>
+
+      <ToastContainer />
     </div>
   );
 }
