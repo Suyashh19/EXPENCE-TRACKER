@@ -1,12 +1,14 @@
 # 💰 Expense Tracker (AI-Powered)
 
-A modern, user-friendly web application for tracking personal expenses, built as part of the **TechSpring Hackathon**. This AI-enhanced Expense Tracker helps users manage their finances by recording expenses, categorizing transactions, and generating intelligent insights using **Google Gemini AI**.
+A modern, responsive web application for tracking personal expenses. The AI-powered Expense Tracker allows users to securely record expenses, automatically categorize transactions, and generate smart spending insights using Google Gemini AI, with backend services powered by Firebase.
 
 ---
 
 ## 📖 Description
 
-The Expense Tracker is a lightweight, responsive web application designed to help individuals take control of their personal finances. In addition to standard expense tracking, the application integrates AI-powered intelligence to understand spending behavior, provide insights, and assist users in making better financial decisions. Built with modern web technologies and Google’s AI ecosystem, it delivers a smooth and insightful experience across devices.
+Expense Tracker (AI-Powered) is a modern, responsive web application designed to help users track and analyze their personal expenses efficiently. Built using React, Firebase (Spark Plan), and Google Gemini AI, the application allows users to securely record expenses, automatically categorize transactions, and gain AI-generated insights into their spending behavior.
+
+The platform supports real-time data storage using Firebase Firestore, secure authentication via Firebase Auth. AI integration enables smart expense categorization and personalized financial insights, helping users make informed financial decisions.
 
 ---
 
@@ -22,6 +24,11 @@ The Expense Tracker is a lightweight, responsive web application designed to hel
 - **Real-time Updates**: Instant UI updates after adding or deleting expenses  
 - **Responsive Design**: Optimized for all screen sizes  
 - **Clean UI/UX**: Modern glassmorphism-based interface  
+- **Cloud Data Storage**: Expense data securely stored using Firebase Firestore   
+- **Session Persistence**: Users remain logged in across page refreshes     
+- **Secure Firestore Rules**: Backend access protected with Firestore security rules  
+- **Fast Client-Side Rendering**: Smooth performance with minimal load times  
+- **AI Fallback Handling**: Graceful handling when AI responses are unavailable
 
 ---
 
@@ -36,15 +43,24 @@ This project leverages the following technologies:
 - **Database**: Firebase Cloud Firestore (NoSQL)  
 - **AI Integration**: Google Gemini API  
 - **Linting**: ESLint  
-- **Deployment**: Firebase Hosting (optional)  
+- **Deployment**: Firebase Hosting  
+
+- **State Management**: React Hooks & Context API  
+- **Backend Services**: Firebase SDK  
+- **Real-time Data Sync**: Firestore real-time listeners   
+- **Security**: Firestore Security Rules  
+- **Version Control**: Git & GitHub  
+- **Package Manager**: npm  
+- **Hosting Plan**: Firebase Spark Plan (Free Tier)  
+ 
 
 ---
 
-## 🌐 Demo Link
+## 🌐 Deployed Link
 
 🔗 **Live Demo:**  
 
-_(To be updated after deployment)_
+https://expense-tracker-1869c.web.app
 
 ---
 
@@ -228,14 +244,12 @@ If you encounter any issues or have questions:
 
 Potential features for future versions:
 
-- Data export functionality (CSV, PDF)
-- Budget setting and alerts
+- Data export functionality in PDF  
 - Recurring transaction support
-- Data visualization with charts and graphs
-- Multi-currency support
 - Dark mode theme
 - Cloud backup and sync
 - Mobile app versions
+- Responsive UI
 
 ---
 
