@@ -253,7 +253,7 @@ Potential features for future versions:
 
 ---
 
-**Made with ❤️ for TechSpring Hackathon**
+**Made with ❤️**
 
 If you find this project useful, please consider giving it a ⭐ on GitHub!
 
